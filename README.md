@@ -1,5 +1,4 @@
 # Agent App SDK Integration 
-=======================
 
 ## Step 1
 Download and unzip the local maven repo from the following link.
