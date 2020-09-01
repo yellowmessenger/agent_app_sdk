@@ -39,7 +39,7 @@ android {
  ```
 
 ## Step 3 
-In MainActivity.java file add the following inside onCreateMethod
+In **MainActivity.java** file add the following inside onCreateMethod
 ``` java
 public class MainActivity extends AppCompatActivity {
 
@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
 ```
 
 ## Step 4
-Create a java class FlutterViewActivity
+Create a java class **FlutterViewActivity**
 ``` java
 package com.yellowmessenger.agentappsdk;
 
@@ -137,9 +137,9 @@ public class FlutterViewActivity extends FlutterActivity {
 ```
 
 ## Step 5
-Add the following activity inside application in AndroidManifest.xml file.
+Add the following activity inside application in **AndroidManifest.xml** file.
 ``` xml
-<activity
+    <activity
             android:name=".FlutterViewActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -149,5 +149,5 @@ Add the following activity inside application in AndroidManifest.xml file.
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-        </activity>
+     </activity>
 ```
