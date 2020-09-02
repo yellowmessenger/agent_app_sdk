@@ -119,9 +119,9 @@ public class FlutterViewActivity extends FlutterActivity {
                     if (call.method.equals("getConfig")) {
             JSONObject json = new JSONObject();
             try {
-                json.put("username", "priyank@yellowmessenger.com");
-                json.put("password", "P@$$9333172315");
-                json.put("botId", "x1553936559750");
+                json.put("username", "username");
+                json.put("password", "password");
+                json.put("botId", "BOT-ID");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
