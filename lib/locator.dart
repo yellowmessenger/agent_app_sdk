@@ -7,7 +7,7 @@ import 'package:support_agent/core/services/ticket_service.dart';
 import 'package:support_agent/core/services/xmpp_creds.dart';
 import 'package:support_agent/core/services/xmpp_service.dart';
 import 'package:support_agent/core/viewmodels/agents_model.dart';
-import 'package:support_agent/core/viewmodels/archives_model.dart';
+// import 'package:support_agent/core/viewmodels/archives_model.dart';
 import 'package:support_agent/core/viewmodels/bot_selection_model.dart';
 import 'package:support_agent/core/viewmodels/chat_model.dart';
 import 'package:support_agent/core/viewmodels/home_model.dart';
@@ -41,7 +41,7 @@ void setupLocator() {
   locator.registerFactory(() => HomeModel());
   locator.registerFactory(() => BotSelectionModel());
   locator.registerFactory(() => LandingModel());
-  locator.registerFactory(() => ArchiveModel());
+  // locator.registerFactory(() => ArchiveModel());
   locator.registerFactory(() => MyTicketsModel());
   locator.registerFactory(() => ChatModel());
   locator.registerFactory(() => TicketInfoModel());

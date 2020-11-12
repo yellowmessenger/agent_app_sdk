@@ -25,18 +25,19 @@ class LandingModel extends BaseModel {
     final SharedPreferences prefs = await _prefs;
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     if (isLoggedIn) {
-      if (_authService.currentUserData == null) {
-        UserData currentUser;
-        try {
-          currentUser =
-              UserData.fromJson(jsonDecode(prefs.getString('currentUser')));
-        } catch (e) {}
-
-        _authService.populateCurrentUser(currentUser);
-        Crashlytics.instance.setUserEmail(currentUser.user.email);
-        Crashlytics.instance.setUserName(currentUser.user.username);
-        Crashlytics.instance.setUserIdentifier(currentUser.user.username);
-      }
+      _authService.logout();
+//      if (_authService.currentUserData == null) {
+//        UserData currentUser;
+//        try {
+//          currentUser =
+//              UserData.fromJson(jsonDecode(prefs.getString('currentUser')));
+//        } catch (e) {}
+//
+//        _authService.populateCurrentUser(currentUser);
+//        Crashlytics.instance.setUserEmail(currentUser.user.email);
+//        Crashlytics.instance.setUserName(currentUser.user.username);
+//        Crashlytics.instance.setUserIdentifier(currentUser.user.username);
+//      }
       if (_botService.defaultBot == null) {
         BotMappings defaultBot;
         try {
@@ -58,7 +59,7 @@ class LandingModel extends BaseModel {
         } catch (e) {}
       }
 
-      return 'home';
+      return 'login';
     } else {
       Crashlytics.instance.setUserEmail('support@yellowmessenger.com');
       Crashlytics.instance.setUserName('Annonymous');

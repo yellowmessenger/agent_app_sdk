@@ -6,6 +6,7 @@ class MessageFormat {
   String ticketId;
   Contact contact;
   String messageType;
+  String agentId;
 
   MessageFormat(
       {this.type,
@@ -14,7 +15,8 @@ class MessageFormat {
       this.source,
       this.ticketId,
       this.contact,
-      this.messageType});
+      this.messageType,
+      this.agentId});
 
   MessageFormat.fromJson(Map<String, dynamic> json) {
     type = json['type'];
@@ -26,9 +28,8 @@ class MessageFormat {
         json['contact'] != null ? Contact.fromJson(json['contact']) : null;
     messageType = json['messageType'] != null ? json['messageType'] : null;
     //  data = null;
-    data = json['data'] != null
-        ? json['data'] as Map<String, dynamic>
-        : null;
+    data = json['data'] != null ? json['data'] as Map<String, dynamic> : null;
+    agentId = json['agentId'];
   }
 
   Map<String, dynamic> toJson() {

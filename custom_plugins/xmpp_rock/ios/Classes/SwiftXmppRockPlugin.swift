@@ -45,7 +45,9 @@ public class SwiftXmppRockPlugin: NSObject, FlutterPlugin {
                     result(connectionStatus)
           }
           else{
-              result("Connected.")
+            self.xmppController.disconnect()
+            let connectionStatus = xmppController.connect()
+            result(connectionStatus)
           }
                    
                } else {
@@ -54,23 +56,10 @@ public class SwiftXmppRockPlugin: NSObject, FlutterPlugin {
                 
           
           break
-//      case "sendData" :
-//          print("Sending Data")
-//
-//          guard let args = call.arguments else {
-//                 return
-//               }
-//               if let myArgs = args as? [String: Any],
-//                  let message = myArgs["msg"] as? String, let userJid = myArgs["userJid"] as? String {
-//                let user = XMPPJID(string: userJid)
-//                let msg = XMPPMessage(type: "chat", to: user)
-//                  msg.addBody(message)
-//                  xmppController.xmppStream.send(msg)
-//                  result("Message Sent: \(message)")
-//               } else {
-//                 result("iOS could not extract flutter arguments in method: (sendData)")
-//               }
-//          break
+      case "closeConnection":
+              self.xmppController.disconnect()
+              break
+
       default:
           result("No Method Configured.")
         
@@ -87,10 +76,11 @@ class EventStreamHandler: NSObject, FlutterStreamHandler {
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         _eventSink = events
         events("Stream Connected")
+        if(!MyBus.shared.myBus().hasObservers()){
         MyBus.shared.myBus().toObservable()
             .subscribe(onNext : {
                 events($0)
-            })
+            })}
                     
         return nil
     }

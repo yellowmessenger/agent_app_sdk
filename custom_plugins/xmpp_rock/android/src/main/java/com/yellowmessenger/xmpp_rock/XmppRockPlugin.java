@@ -1,6 +1,7 @@
 package com.yellowmessenger.xmpp_rock;
 
 import android.content.Context;
+import android.os.Handler;
 
 import androidx.annotation.NonNull;
 
@@ -80,6 +81,7 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
         mEventSink = events;
         mEventSink.success("Stream Connected");
         try {
+           if(! MyBus.getInstance().bus().hasObservers())
             MyBus.getInstance().bus().toObservable()
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(object -> {
@@ -94,7 +96,7 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
 
     @Override
     public void onCancel(Object arguments) {
-//        xmppService.disconnectConnection();
+       xmppService.disconnectConnection();
     }
 
     private Boolean initXMPP(Context mContext, String fullJid, String xmppPassword, int port) {
@@ -104,7 +106,8 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
             if(xmppService.connection !=null && xmppService.connection.isConnected()){xmppService.disconnectConnection();}
             xmppService.init(fullJid, xmppPassword, port);
              xmppService.connectConnection(mContext);
-             return xmppService.connection.isConnected();
+            return xmppService.connection.isConnected();
+
 
         } catch (XmppStringprepException e) {
             e.printStackTrace();

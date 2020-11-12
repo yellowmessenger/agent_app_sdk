@@ -1,11 +1,14 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:support_agent/core/models/actions.dart';
 import 'package:support_agent/core/models/agents.dart';
 import 'package:support_agent/core/models/all_bots.dart';
 import 'package:support_agent/core/models/bot_status.dart';
 import 'package:support_agent/core/models/bot_user_profile.dart';
+import 'package:support_agent/core/models/collaborators.dart';
 import 'package:support_agent/core/models/common.dart';
+import 'package:support_agent/core/models/contact.dart';
 import 'package:support_agent/core/models/group.dart';
 import 'package:support_agent/core/models/messages.dart';
 import 'package:support_agent/core/models/mimetypes.dart';
@@ -71,19 +74,11 @@ class Api {
     return allBots;
   }
 
-  Future<BotMappings> getBotById(String authKey, String botId) async {
-    var response = await client.get('$API_URL/data/nlp/onlyMapping?bot=$botId',
-        headers: {'x-auth-token': '$authKey'});
-    if (response.statusCode == 200) {
-      print(response.body);
-      return BotMappings.fromJson(json.decode(response.body));
-    }
-  }
-
   Future<Group> getGroups(String authKey, String botId) async {
     var response = await client.get('$API_URL/agents/tickets/groups?bot=$botId',
         headers: {'x-auth-token': '$authKey'});
     if (response.statusCode == 200) {
+      print(response.body);
       return Group.fromJson(json.decode(response.body));
     }
   }
@@ -124,13 +119,34 @@ class Api {
       return 0;
   }
 
-  Future<List<Ticket>> getArchiveTickets(String authKey, String botId) async {
+  Future<List<Ticket>> getArchiveTickets(
+      String authKey, String botId, int limit, int offset) async {
     Map data = {
       'filter': {
-        'limit': 200,
-        'offset': 0,
-        'statuses': ["resolved", "open"]
+        'limit': limit,
+        'offset': offset,
+        'statuses': ["assigned", "resolved", "queued", "open"]
       }
+    };
+    String archiveBody = json.encode(data);
+
+    var response = await client.post(
+        '$API_URL/agents/tickets/filtered_search?bot=$botId',
+        headers: {
+          'x-auth-token': '$authKey',
+          'Content-Type': 'application/json'
+        },
+        body: archiveBody);
+
+    if (response.statusCode == 200) {
+      return TicketList.fromJson(json.decode(response.body)).ticketList;
+    }
+  }
+
+  Future<List<Ticket>> searchTickets(
+      String authKey, String botId, String searchText) async {
+    Map data = {
+      'filter': {"searchText": searchText}
     };
     String archiveBody = json.encode(data);
 
@@ -166,6 +182,48 @@ class Api {
     }
   }
 
+  Future<dynamic> updateTicketTags(
+      String authKey, String botId, String ticketId, List<String> tags) async {
+    Map customFieldsBody = {"ticketId": ticketId, "tags": tags};
+
+    String body = json.encode(customFieldsBody);
+
+    var response = await client.post('$API_URL/agents/tickets/tag?bot=$botId',
+        headers: {
+          'x-auth-token': '$authKey',
+          'Content-Type': 'application/json'
+        },
+        body: body);
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+  }
+
+  Future<dynamic> updateContactDetails(String authKey, String botId,
+      String ticketId, ContactDetails contactDetails) async {
+    Map customFieldsBody = {
+      "ticketId": ticketId,
+      "contactDetails": {
+        "name": contactDetails.name,
+        "phone": contactDetails.phone,
+        "email": contactDetails.email
+      }
+    };
+
+    String body = json.encode(customFieldsBody);
+
+    var response = await client.post(
+        '$API_URL/agents/tickets/update_contact?bot=$botId',
+        headers: {
+          'x-auth-token': '$authKey',
+          'Content-Type': 'application/json'
+        },
+        body: body);
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+  }
+
   Future<Template> getTemplate(String authKey, String botId) async {
     var response = await client.get('$API_URL/agents/data/templates?bot=$botId',
         headers: {'x-auth-token': '$authKey'});
@@ -178,7 +236,19 @@ class Api {
     var response = await client.get('$API_URL/agents/settings?bot=$botId',
         headers: {'x-auth-token': '$authKey'});
     if (response.statusCode == 200) {
+      // print(response.body);
       return TicketSettings.fromJson(json.decode(response.body));
+    }
+  }
+
+  Future<Ticket> getTicketInfo(
+      String authKey, String ticketId, String botId) async {
+    var response = await client.get(
+        '$API_URL/agents/tickets/ticket/$ticketId?bot=$botId',
+        headers: {'x-auth-token': '$authKey'});
+    if (response.statusCode == 200) {
+      var ticketData = SingleTicket.fromJson(json.decode(response.body));
+      return ticketData.ticket;
     }
   }
 
@@ -197,7 +267,7 @@ class Api {
         },
         body: body);
     if (response.statusCode == 200) {
-      print(response.body);
+      print("form update api" + response.body);
       return json.decode(response.body);
     }
   }
@@ -246,13 +316,16 @@ class Api {
   }
 
   Future reassignTicket(
-      String authKey, String botId, String ticketId, String username) async {
+      String authKey, String botId, String ticketId, String username,
+      {bool addCollab = false}) async {
     Map data = {
       'ticketId': ticketId,
       'agentId': username,
       'customFields': {},
+      "keepCollaborator": addCollab
     };
     String body = json.encode(data);
+    print(body);
     var response = await client.post(
       '$API_URL/agents/tickets/reassign?bot=$botId',
       headers: {"Content-Type": "application/json", 'x-auth-token': '$authKey'},
@@ -283,6 +356,34 @@ class Api {
     String body = json.encode(data);
     var response = await client.post(
       '$API_URL/agents/tickets/reassign_to_group?bot=$botId',
+      headers: {"Content-Type": "application/json", 'x-auth-token': '$authKey'},
+      body: body,
+    );
+    if (json.decode(response.body)["success"] != null &&
+        json.decode(response.body)["success"])
+      return json.decode(response.body);
+    else
+      return null;
+  }
+
+  Future<CollaboratorModel> getCollaboratorsList(
+      String authKey, String botId) async {
+    var response = await client.get('$API_URL/sso/bot/agents?bot=$botId',
+        headers: {'x-auth-token': '$authKey'});
+    if (response.statusCode == 200) {
+      return CollaboratorModel.fromJson(json.decode(response.body));
+    }
+  }
+
+  Future updateCollaboratorsList(String authKey, String botId, String ticketId,
+      List<String> collaborators) async {
+    Map data = {
+      'ticketId': ticketId,
+      "collaborators": collaborators,
+    };
+    String body = json.encode(data);
+    var response = await client.post(
+      '$API_URL/agents/tickets/update_collaborators?bot=$botId',
       headers: {"Content-Type": "application/json", 'x-auth-token': '$authKey'},
       body: body,
     );
@@ -376,8 +477,26 @@ class Api {
     var response = await client.get(
         '$API_URL/agents/data/messages?bot=$botId&uid=$uid&limit=100&ticketId=$ticketId',
         headers: {'x-auth-token': '$authKey'});
+    print(response.body);
     if (response.statusCode == 200) {
       return Messages.fromJson(json.decode(response.body));
+    }
+  }
+
+  Future<dynamic> getReplyMessage(
+      String authKey, String botId, String messageId) async {
+    String body = jsonEncode({"replyToId": messageId, "source": "whatsapp"});
+
+    var response = await client.post(
+        '$API_URL/agents/data/getReplyToMessage?bot=$botId',
+        headers: {
+          'x-auth-token': '$authKey',
+          'Content-Type': 'application/json'
+        },
+        body: body);
+    if (response.statusCode == 200) {
+      print(response.body);
+      return json.decode(response.body);
     }
   }
 
@@ -409,9 +528,9 @@ class Api {
   }
 
   Future<BotStatus> getBotStatus(
-      String authKey, String botId, String uId) async {
+      String authKey, String botId, String uId, String source) async {
     var response = await client.get(
-        '$API_URL/agents/user/status?bot=$botId&uid=$uId&source=yellowmessenger',
+        '$API_URL/agents/user/status?bot=$botId&uid=$uId&source=$source',
         headers: {
           'x-auth-token': '$authKey',
           'Content-Type': 'application/json'
@@ -504,6 +623,30 @@ class Api {
         body: body);
     if (response.statusCode == 200) {
       return HourlyStatsResponse.fromJson(json.decode(response.body));
+    }
+  }
+
+  Future<AgentActions> getActions(String authKey, String botId) async {
+    var response = await client.get(
+        '$API_URL/agents/actions/agentActions?bot=$botId',
+        headers: {'x-auth-token': '$authKey'});
+    if (response.statusCode == 200) {
+      return AgentActions.fromJson(json.decode(response.body));
+    }
+  }
+
+  Future<dynamic> sendActions(String authKey, String botId, Map action) async {
+    String body = jsonEncode(action);
+
+    var response = await client.post(
+        '$API_URL/agents/actions/runAgentActions?bot=$botId',
+        headers: {
+          'x-auth-token': '$authKey',
+          'Content-Type': 'application/json'
+        },
+        body: body);
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
     }
   }
 }

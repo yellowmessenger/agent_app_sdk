@@ -9,6 +9,7 @@ enum XMPPControllerError: Error {
 
 class XMPPController: NSObject {
     var xmppStream: XMPPStream = XMPPStream()
+    private var xmppAutoPing: XMPPAutoPing!
     var hostName: String = ""
     var hostPort: UInt16 = 5222
     var password: String = ""
@@ -30,7 +31,13 @@ class XMPPController: NSObject {
         self.xmppStream.hostPort = hostPort
         self.xmppStream.startTLSPolicy = XMPPStreamStartTLSPolicy.allowed
         self.xmppStream.myJID = userJID
-        self.xmppStream.keepAliveInterval = 0.5;
+        self.xmppStream.keepAliveInterval = 10
+        self.xmppStream.enableBackgroundingOnSocket = true
+        self.xmppAutoPing = XMPPAutoPing(dispatchQueue: DispatchQueue.main)
+        self.xmppAutoPing?.activate(xmppStream)
+        self.xmppAutoPing?.addDelegate(self, delegateQueue: DispatchQueue.main)
+        self.xmppAutoPing?.pingInterval = 2
+        self.xmppAutoPing?.pingTimeout = 2
 
         self.xmppStream.addDelegate(self, delegateQueue: DispatchQueue.main)
     }
@@ -41,7 +48,7 @@ class XMPPController: NSObject {
         let domain = self.xmppStream.myJID?.domain
 
         if domain == "xmpp.yellowmssngr.com" {
-            let priority = DDXMLElement.element(withName: "priority", stringValue: "24") as! DDXMLElement
+            let priority = DDXMLElement.element(withName: "priority", stringValue: "1") as! DDXMLElement
             presence.addChild(priority)
         }
         xmppStream.send(presence)
@@ -58,6 +65,7 @@ class XMPPController: NSObject {
         }
         do {
               try xmppStream.oldSchoolSecureConnect(withTimeout: 2)
+           
                                    return true
                                } catch let error {
                                print("Something went wrong! \(error)")
@@ -69,6 +77,7 @@ class XMPPController: NSObject {
     func disconnect() {
         goOffline()
         xmppStream.disconnect()
+           
     }
 
 }
@@ -81,25 +90,38 @@ extension XMPPController: XMPPStreamDelegate {
 
     func xmppStreamConnectDidTimeout(_ sender: XMPPStream) {
         print("timeout:")
+        MyBus.shared.myBus().send(s: "{\"connected\" : false}")
     }
 
     func xmppStreamDidConnect(_ stream: XMPPStream) {
         print("Stream: Connected")
+        
         do {
             try stream.authenticate(withPassword: self.password)
         } catch let error {
             print("Auth Error: \(error)")
+            MyBus.shared.myBus().send(s: "{\"authenticated\" : false}")
+            MyBus.shared.myBus().send(s: "{\"connected\" : false}")
         }
 
+    }
+    
+    func xmppStreamDidDisconnect(stream: XMPPStream, withError error: NSError){
+        print("disconnected");
+        MyBus.shared.myBus().send(s: "{\"connected\" : false}")
+        
     }
 
     func xmppStreamDidNotConnect(_ stream: XMPPStream) {
         print("Stream: Not Connected")
+        MyBus.shared.myBus().send(s: "{\"connected\" : false}")
     }
 
     func xmppStreamDidAuthenticate(_ sender: XMPPStream) {
         //self.xmppStream.send(XMPPPresence())
         print("Stream: Authenticated")
+        MyBus.shared.myBus().send(s: "{\"connected\" : true}")
+        MyBus.shared.myBus().send(s: "{\"authenticated\" : true}")
         goOnline()
 
     }
@@ -126,11 +148,14 @@ extension XMPPController: XMPPStreamDelegate {
     }
     func xmppStream(_ sender: XMPPStream, didNotAuthenticate error: DDXMLElement) {
         print("Stream: Failed to Authenticate")
+        MyBus.shared.myBus().send(s: "{\"connected\" : false}")
+        MyBus.shared.myBus().send(s: "{\"authenticated\" : false}")
     }
 
     func xmppStream(_ sender: XMPPStream, didReceiveError error: DDXMLElement) {
            print(error)
        }
+  
 
     func xmppStream(_ sender: XMPPStream, didReceive trust: SecTrust, completionHandler: ((Bool) -> Void)) {
                completionHandler(true)
@@ -140,6 +165,8 @@ extension XMPPController: XMPPStreamDelegate {
                print("willSecureWithSettings")
                settings.setObject(true, forKey:GCDAsyncSocketManuallyEvaluateTrust as NSCopying)
            }
+    
+    
 
 }
 

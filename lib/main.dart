@@ -54,6 +54,7 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
   if (message.containsKey('notification')) {
     // Handle notification message
     final dynamic notification = message['notification'];
+    print(notification);
   }
 
   // Or do other work.
@@ -105,10 +106,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   static const platform =
       const MethodChannel('com.yellowmessenger.support_agent/data');
 
-  _MyAppState() {
-    // platform.setMethodCallHandler(_receiveFromHost);
-    _getConfig();
-  }
+//  _MyAppState() {
+//    // platform.setMethodCallHandler(_receiveFromHost);
+//    _getConfig();
+//  }
   _getConfig() async {
     var data = await platform.invokeMethod("getConfig");
 
@@ -168,6 +169,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _getConfig();
     setupNotifications();
     // new_ticket/user_message/reminder -> Types.
     _firebaseMessaging.configure(

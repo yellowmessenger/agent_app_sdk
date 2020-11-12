@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
-import 'package:battery_optimization/battery_optimization.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,20 +20,17 @@ import 'package:support_agent/core/services/api.dart';
 import 'package:support_agent/core/services/authentication_service.dart';
 import 'package:support_agent/core/services/bot_service.dart';
 import 'package:support_agent/core/services/common.dart';
+import 'package:support_agent/core/services/connectivity.dart';
 import 'package:support_agent/core/services/notification_service.dart';
 import 'package:support_agent/core/services/ticket_service.dart';
 import 'package:support_agent/core/services/xmpp_creds.dart';
 import 'package:support_agent/core/services/xmpp_service.dart';
-import 'package:support_agent/ui/widgets/archives.dart';
 import 'package:support_agent/ui/widgets/mytickets.dart';
-import 'package:support_agent/ui/widgets/overview.dart';
-import 'package:support_agent/ui/widgets/settings.dart';
 import '../../locator.dart';
 import 'base_model.dart';
 
 class HomeModel extends BaseModel {
   Api _api = locator<Api>();
-
   AuthenticationService _authService = locator<AuthenticationService>();
   BotService _botService = locator<BotService>();
   XmppService _xmppService = locator<XmppService>();
@@ -42,6 +39,15 @@ class HomeModel extends BaseModel {
   XmppCredsService _xmppCredsService = locator<XmppCredsService>();
   TicketService _ticketService = locator<TicketService>();
   BuildContext ctx;
+  bool _xmppReady = false;
+  bool get xmppReady => _xmppReady;
+  set xmppReady(bool status) {
+    _xmppReady = status;
+  }
+
+  StreamSubscription _connectionChangeStream;
+
+  bool isOffline = false;
 
   BotMappings _currentBot;
   BotMappings get currentBot => _currentBot;
@@ -55,30 +61,28 @@ class HomeModel extends BaseModel {
 
   int currentIndex = 0;
   final List<NavigationItem> navigationItems = [
-    // NavigationItem(
-    //     icon: Icons.dashboard, title: "Overview", navPage: OverviewPage()),
     NavigationItem(
         icon: Icons.local_activity,
         title: "My Tickets",
         navPage: MyTicketsPage()),
-    // NavigationItem(
-    //     icon: Icons.archive, title: "Archives", navPage: ArchivePage()),
-    // NavigationItem(
-    //     icon: Icons.settings, title: "Settings", navPage: SettingsPage())
   ];
-  BuildContext _context;
 
-// Homepage initialisation
   initHome(BuildContext context) async {
     setState(ViewState.Busy);
-    _context = context;
+    ConnectionStatusSingleton connectionStatus =
+        ConnectionStatusSingleton.getInstance();
+    _connectionChangeStream =
+        connectionStatus.connectionChange.listen(connectionChanged);
+    xmppReady = false;
     _currentBot = _botService.defaultBot;
     _configureSelectNotificationSubject(context);
     _currentUser = _authService.currentUserData.user;
-    print(_authService.currentUserData.accessToken);
 
-    _xmppConnection();
-    messageEvents = _xmppService.chatStreamController.stream.listen(_updateUI);
+    await _xmppConnection();
+
+    if (!_xmppService.chatStreamController.isPaused)
+      messageEvents =
+          _xmppService.chatStreamController.stream.listen(_updateUI);
 
     var agentResponse = await _api.getAgents(
         _authService.currentUserData.accessToken,
@@ -96,11 +100,6 @@ class HomeModel extends BaseModel {
       }
     }
 
-    BatteryOptimization.isIgnoringBatteryOptimizations().then((onValue) {
-      if (!onValue) {
-        // showBatteryDialog(context);
-      }
-    });
     // Presence polling
     checkPresence();
 
@@ -126,23 +125,41 @@ class HomeModel extends BaseModel {
     await _xmppService.initializeXmpp();
   }
 
+  void connectionChanged(dynamic hasConnection) {
+    setState(ViewState.Busy);
+    isOffline = !hasConnection;
+    if (isOffline) {
+      xmppReady = !isOffline;
+    } else {
+      _xmppService.closeCurrentConnection();
+      _xmppConnection();
+    }
+
+    setState(ViewState.Idle);
+  }
+
   checkPresence() {
-    Timer.periodic(Duration(seconds: 10), (Timer t) async {
+    Timer.periodic(Duration(seconds: 30), (Timer t) async {
       setNotification();
-      var agentResponse = await _api.getAgents(
-          _authService.currentUserData.accessToken,
-          _botService.defaultBot.userName);
-      if (agentResponse != null) {
-        for (var agent in agentResponse.agentItems) {
-          if (agent.agentProfile.username == _currentUser.username) {
-            setState(ViewState.Busy);
-            agentPresence = agent.status != "available"
-                ? agent.status == "offline"
-                    ? AgentPresenceState.Offline
-                    : AgentPresenceState.Busy
-                : AgentPresenceState.Available;
-            setState(ViewState.Idle);
-            if (agentPresence == AgentPresenceState.Offline) _xmppConnection();
+      if (xmppReady) {
+        var agentResponse = await _api.getAgents(
+            _authService.currentUserData.accessToken,
+            _botService.defaultBot.userName);
+
+        if (agentResponse != null) {
+          for (var agent in agentResponse.agentItems) {
+            if (agent.agentProfile.username == _currentUser.username) {
+              setState(ViewState.Busy);
+              agentPresence = agent.status != "available"
+                  ? agent.status == "offline"
+                      ? AgentPresenceState.Offline
+                      : AgentPresenceState.Busy
+                  : AgentPresenceState.Available;
+              setState(ViewState.Idle);
+              if (agentPresence == AgentPresenceState.Offline &&
+                  !_xmppService.chatStreamSubscription.isPaused)
+                await _xmppConnection();
+            }
           }
         }
       }
@@ -169,30 +186,48 @@ class HomeModel extends BaseModel {
   _updateUI(String data) {
     setState(ViewState.Busy);
     MessageFormat incoming;
-    if (data != "Stream Connected")
+
+    if (data != "Stream Connected") {
+      if (data[0] == "{" && data[data.length - 1] == "}") {
+        try {
+          Map<String, dynamic> incomingEvents = jsonDecode(data);
+          incoming = MessageFormat.fromJson(jsonDecode(data));
+          if (incomingEvents.containsKey("connected")) {
+            xmppReady = incomingEvents["connected"];
+            agentPresence = !xmppReady
+                ? AgentPresenceState.Offline
+                : AgentPresenceState.Available;
+          }
+          if (incomingEvents.containsKey("authenticated")) {
+            xmppReady = incomingEvents["authenticated"];
+            agentPresence = !xmppReady
+                ? AgentPresenceState.Offline
+                : AgentPresenceState.Available;
+          }
+        } catch (e) {}
+      }
       try {
-        incoming = MessageFormat.fromJson(jsonDecode(data));
-        if (incoming.type == "support" && incoming.messageType == "BOT") {
+        if (incoming.type == "support" &&
+            incoming.messageType == "BOT" &&
+            incoming.data['event'] == null) {
           setNotification();
           sendNotification("New Ticket", incoming.ticketId);
         } else if (incoming.type == "sender") {
           if (incoming.data['typing'] == null &&
-              incoming.data['message'] != null) {
+              incoming.data['event'] == null) {
             // checking if chat page is closed....
-            print(_appState.appState);
+            // print(_appState.appState);
             if (_ticketService.currentTicketId == null ||
                 _appState.appState == AppLifecycleState.paused) {
               sendNotification(incoming.contact.name, incoming.data['message'],
                   payload: incoming.ticketId);
-            } else {
-              if (_ticketService.currentTicketId != incoming.ticketId)
-                sendNotification(
-                    incoming.contact.name, incoming.data['message'],
-                    payload: incoming.ticketId);
-            }
+            } else if (_ticketService.currentTicketId != incoming.ticketId)
+              sendNotification(incoming.contact.name, incoming.data['message'],
+                  payload: incoming.ticketId);
           }
         }
       } catch (e) {}
+    }
     setState(ViewState.Idle);
   }
 
@@ -216,7 +251,7 @@ class HomeModel extends BaseModel {
 
   gotoSettings() {
     setState(ViewState.Busy);
-    currentIndex = 3;
+    currentIndex = 0;
     setState(ViewState.Idle);
   }
 
@@ -276,34 +311,34 @@ class HomeModel extends BaseModel {
     );
   }
 
-  showBatteryDialog(BuildContext context) {
-    // set up the button
-    Widget continueButton = FlatButton(
-      child: Text("Sure"),
-      onPressed: () {
-        BatteryOptimization.openBatteryOptimizationSettings();
-        Navigator.of(context).pop();
-      },
-    );
+  // showBatteryDialog(BuildContext context) {
+  //   // set up the button
+  //   Widget continueButton = FlatButton(
+  //     child: Text("Sure"),
+  //     onPressed: () {
+  //       BatteryOptimization.openBatteryOptimizationSettings();
+  //       Navigator.of(context).pop();
+  //     },
+  //   );
 
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: Text("Battery Optimization Settings"),
-      content: Text(
-          "Please turn off battery optimization for this app to ensure better performance."),
-      actions: [
-        continueButton,
-      ],
-    );
+  //   // set up the AlertDialog
+  //   AlertDialog alert = AlertDialog(
+  //     title: Text("Battery Optimization Settings"),
+  //     content: Text(
+  //         "Please turn off battery optimization for this app to ensure better performance."),
+  //     actions: [
+  //       continueButton,
+  //     ],
+  //   );
 
-    // show the dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
-    );
-  }
+  //   // show the dialog
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return alert;
+  //     },
+  //   );
+  // }
 
   void changePresence(String status) async {
     var response = await _api.changePresence(
@@ -322,4 +357,17 @@ class HomeModel extends BaseModel {
       setState(ViewState.Idle);
     }
   }
+
+  void goOffline() {
+    setState(ViewState.Busy);
+    agentPresence = AgentPresenceState.Offline;
+    setState(ViewState.Idle);
+    _xmppService.closeCurrentConnection();
+  }
+
+  void goOnline() {
+    if (_xmppService.chatStreamSubscription.isPaused) _xmppConnection();
+  }
+
+  dispose() {}
 }

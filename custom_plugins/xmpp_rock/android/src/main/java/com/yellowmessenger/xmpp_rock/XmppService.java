@@ -85,7 +85,6 @@ public class XmppService {
         configBuilder.setSendPresence(true);
         configBuilder.setConnectTimeout(10000);
         configBuilder.setSocketFactory(SSLSocketFactory.getDefault());
-        configBuilder.setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible);
 
 //        configBuilder.setDebuggerEnabled(true);
         try {
@@ -153,12 +152,13 @@ public class XmppService {
                 @Override
                 protected void onCancelled() {
                     super.onCancelled();
+                    MyBus.getInstance().bus().send("{\"connected\": "+ false + "}");
                 }
 
                 @Override
             protected void onPostExecute(Boolean aBoolean) {
                 super.onPostExecute(aBoolean);
-                MyBus.getInstance().bus().send("{\"connection\": "+ aBoolean.toString() + "}");
+//                MyBus.getInstance().bus().send("{\"connected\": "+ aBoolean.toString() + "}");
             }
 
 
@@ -170,7 +170,7 @@ public class XmppService {
                     connection.connect();
                     login();
                     connected = true;
-                    Presence p = new Presence(available, "I am available", 1, Presence.Mode.available);
+                    Presence p = new Presence(available, "AVAILABLE", 1, Presence.Mode.available);
                     try {
                         connection.sendStanza(p);
                     } catch (SmackException.NotConnectedException e) {
@@ -240,6 +240,7 @@ public class XmppService {
         @Override
         public void connected(final XMPPConnection connection) {
             Log.d("xmpp", "Connected!");
+            MyBus.getInstance().bus().send("{\"connected\": "+ true + "}");
             connected = true;
             if (!connection.isAuthenticated()) {
                 login();
@@ -247,6 +248,8 @@ public class XmppService {
 
 
         }
+
+
 
 
         @Override
@@ -259,6 +262,7 @@ public class XmppService {
                     }
                 });
             Log.d("xmpp", "ConnectionCLosed!");
+            MyBus.getInstance().bus().send("{\"connected\": "+ false + "}");
             connected = false;
             chat_created = false;
             loggedin = false;
@@ -274,9 +278,13 @@ public class XmppService {
                     }
                 });
             Log.d("xmpp", "ConnectionClosedOn Error!");
+            MyBus.getInstance().bus().send("{\"connected\": "+ false + "}");
             connected = false;
             chat_created = false;
             loggedin = false;
+
+
+
         }
 
 
@@ -325,11 +333,14 @@ public class XmppService {
             {
                 Log.d("xmpp", "Authenticated!");
 
+
                 loggedin = true;
                 chat_created = false;
 
 
             }
+            MyBus.getInstance().bus().send("{\"authenticated\": "+ connection.isAuthenticated() + "}");
+
 
             if (isToasted)
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -341,3 +352,4 @@ public class XmppService {
         }
     }
 }
+

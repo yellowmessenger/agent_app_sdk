@@ -11,35 +11,11 @@
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <excludeFolder url="file://$MODULE_DIR$/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/.gradle" />
-      <excludeFolder url="file://$MODULE_DIR$/.pub" />
-      <excludeFolder url="file://$MODULE_DIR$/build" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/.dart_tool" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/.pub" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/build" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/.dart_tool" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/.pub" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/build" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/.dart_tool" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/.pub" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/build" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/.dart_tool" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/.pub" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/build" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/build/app/intermediates/flutter/debug/flutter_assets/packages" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/build/app/intermediates/merged_assets/debug/out/flutter_assets/packages" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/build/flutter_assets/packages" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/build/ios/Debug-iphonesimulator/Runner.app/Frameworks/App.framework/flutter_assets/packages" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/build/ios/iphonesimulator/Runner.app/Frameworks/App.framework/flutter_assets/packages" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/ios/Flutter/App.framework/flutter_assets/packages" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/.symlinks/plugins/xmpp_rock/example/ios/Flutter/App.framework/flutter_assets/packages" />
-      <excludeFolder url="file://$MODULE_DIR$/custom_plugins/xmpp_rock/example/ios/Flutter/App.framework/flutter_assets/packages" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Dart SDK" level="project" />
-    <orderEntry type="library" name="Flutter Plugins" level="project" />
     <orderEntry type="library" name="Dart Packages" level="project" />
   </component>
 </module>

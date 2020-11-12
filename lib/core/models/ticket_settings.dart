@@ -1,3 +1,5 @@
+import 'package:support_agent/core/models/tickets.dart';
+
 class TicketSettings {
   bool success;
   String message;
@@ -24,7 +26,7 @@ class TicketSettings {
 
 class Data {
   Settings settings;
-  AgentProfile agentProfile;
+  AgentProfileSettings agentProfile;
 
   Data({this.settings, this.agentProfile});
 
@@ -33,7 +35,7 @@ class Data {
         ? new Settings.fromJson(json['settings'])
         : null;
     agentProfile = json['agentProfile'] != null
-        ? new AgentProfile.fromJson(json['agentProfile'])
+        ? new AgentProfileSettings.fromJson(json['agentProfile'])
         : null;
   }
 
@@ -66,6 +68,7 @@ class Settings {
   String createdDate;
   String updatedDate;
   String botId;
+  bool enableCollaboration;
   int iV;
   List<dynamic> closeTicketOptions;
   List<AgentUiConfiguration> agentUiConfiguration;
@@ -90,6 +93,7 @@ class Settings {
       this.createdDate,
       this.updatedDate,
       this.botId,
+      this.enableCollaboration,
       this.iV,
       this.closeTicketOptions,
       this.agentUiConfiguration,
@@ -129,6 +133,9 @@ class Settings {
       json['agentUiConfiguration'].forEach((v) {
         agentUiConfiguration.add(new AgentUiConfiguration.fromJson(v));
       });
+    }
+    if (json['enableCollaboration'] != null) {
+      enableCollaboration = json['enableCollaboration'];
     }
     if (json['ticketsQueueConfig'] != null) {
       ticketsQueueConfig = new List<TicketsQueueConfig>();
@@ -379,6 +386,7 @@ class Field {
   bool requiredToTransferTicket;
   String description;
   String name;
+  List<dynamic> tags;
   List<dynamic> checkboxes;
   String type;
 
@@ -389,6 +397,7 @@ class Field {
       this.description,
       this.name,
       this.checkboxes,
+      this.tags,
       this.type});
 
   Field.fromJson(Map<String, dynamic> json) {
@@ -398,6 +407,7 @@ class Field {
     description = json['description'];
     name = json['name'];
     checkboxes = json['checkboxes'] ?? null;
+    tags = json['tags'] ?? null;
     type = json['type'];
   }
 
@@ -413,7 +423,7 @@ class Field {
   }
 }
 
-class AgentProfile {
+class AgentProfileSettings {
   int id;
   String owner;
   String username;
@@ -424,11 +434,11 @@ class AgentProfile {
   int maxConnTickets;
   bool callEnabled;
   bool voipCallEnabled;
-  Null voipPassword;
-  Null webrtcUsername;
+  String voipPassword;
+  String webrtcUsername;
   String email;
 
-  AgentProfile(
+  AgentProfileSettings(
       {this.id,
       this.owner,
       this.username,
@@ -443,7 +453,7 @@ class AgentProfile {
       this.webrtcUsername,
       this.email});
 
-  AgentProfile.fromJson(Map<String, dynamic> json) {
+  AgentProfileSettings.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     owner = json['owner'];
     username = json['username'];

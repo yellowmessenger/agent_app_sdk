@@ -8,10 +8,10 @@ class Group {
   Group.fromJson(Map<String, dynamic> json) {
     success = json['success'];
     message = json['message'];
-    if (json['data'] != null) {
+    if (json['data'] != null && success) {
       data = new List<GroupData>();
       json['data'].forEach((v) {
-        data.add(new GroupData.fromJson(v));
+        data.add(GroupData.fromJson(v));
       });
     }
   }

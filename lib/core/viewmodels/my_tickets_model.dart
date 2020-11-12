@@ -34,11 +34,12 @@ class MyTicketsModel extends BaseModel {
     String authKey = _authService.currentUserData.accessToken;
     String userName = _authService.currentUserData.username;
     String botId = _botService.defaultBot.userName;
-    var tickets = await _api.getMyTickets(authKey, userName, botId);
-    if (tickets != null) {
-      _tickets = tickets;
-      _filteredTicketList = _tickets;
-    }
+    // var tickets = await _api.getMyTickets(authKey, userName, botId);
+    // if (tickets != null) {
+    //   _tickets = tickets;
+    //   _filteredTicketList = _tickets;
+    // }
+    await updateTickets();
     myTicketsEvents =
         _xmppService.chatStreamController.stream.listen(_updateUI);
     setState(ViewState.Idle);
@@ -46,6 +47,7 @@ class MyTicketsModel extends BaseModel {
   }
 
   _updateUI(String data) {
+    print(data);
     setState(ViewState.Busy);
     MessageFormat incoming;
     if (data != "Stream Connected")
@@ -54,14 +56,66 @@ class MyTicketsModel extends BaseModel {
         if (incoming.type == "support" && incoming.messageType == "BOT") {
           updateTickets();
         } else if (incoming.type == "sender") {
+          var incomingTicket = _filteredTicketList
+              .singleWhere((element) => element.ticketId == incoming.ticketId);
+
+          incomingTicket.responded = incoming.data['typing'] == null
+              ? false
+              : incomingTicket.responded;
           _filteredTicketList
               .singleWhere((element) => element.ticketId == incoming.ticketId)
-              .responded = false;
+              .typing = (incoming.data['typing'] !=
+                  null &&
+              incoming.data['typing']);
         }
       } catch (e) {
         // print(e);
       }
     setState(ViewState.Idle);
+  }
+
+  sortTicketsCustom(List<Ticket> ticketResults) {
+    ticketResults.sort((a, b) {
+      DateTime aDate, bDate;
+      var adate = a.lastUserMessageTime != "null"
+          ? a.lastUserMessageTime
+          : a.lastAgentMessageTime != "null"
+              ? a.lastAgentMessageTime
+              : a.updated != "null" ? a.updated : a.timestamp;
+
+      try {
+        aDate = DateTime.parse(adate).toLocal();
+      } catch (e) {
+        try {
+          aDate = DateTime.fromMillisecondsSinceEpoch(int.parse(adate));
+        } catch (e) {
+          print(e);
+        }
+      }
+
+      var bdate = b.lastUserMessageTime != "null"
+          ? b.lastUserMessageTime
+          : b.lastAgentMessageTime != "null"
+              ? b.lastAgentMessageTime
+              : b.updated != "null" ? b.updated : b.timestamp;
+
+      try {
+        bDate = DateTime.parse(bdate).toLocal();
+      } catch (e) {
+        try {
+          bDate = DateTime.fromMillisecondsSinceEpoch(int.parse(bdate));
+        } catch (e) {
+          print(e);
+        }
+      }
+
+      a.sortingTime = aDate.toIso8601String();
+      b.sortingTime = bDate.toIso8601String();
+
+      return bDate.compareTo(aDate);
+    });
+
+    return ticketResults;
   }
 
   updateTickets() async {
@@ -70,6 +124,17 @@ class MyTicketsModel extends BaseModel {
     String userName = _authService.currentUserData.username;
     String botId = _botService.defaultBot.userName;
     var tickets = await _api.getMyTickets(authKey, userName, botId);
+    tickets = sortTicketsCustom(tickets);
+    // tickets.sort((a, b) {
+    //   var adate = a.updated;
+
+    //   DateTime aDate = DateTime.parse(adate).toLocal();
+
+    //   var bdate = b.updated;
+    //   DateTime bDate = DateTime.parse(bdate).toLocal();
+
+    //   return bDate.compareTo(aDate);
+    // });
     if (tickets != null) {
       _tickets = tickets;
       _filteredTicketList = _tickets;
@@ -81,15 +146,15 @@ class MyTicketsModel extends BaseModel {
     String authKey = _authService.currentUserData.accessToken;
     String userName = _authService.currentUserData.username;
     String botId = _botService.defaultBot.userName;
-    Timer.periodic(Duration(seconds: 20), (Timer t) async {
-      var tickets = await _api.getMyTickets(authKey, userName, botId);
-      if (tickets != null) {
-        setState(ViewState.Busy);
-        _tickets = tickets;
-        _filteredTicketList = _tickets;
-        setState(ViewState.Idle);
-      }
-    });
+    // Timer.periodic(Duration(seconds: 60), (Timer t) async {
+    //   var tickets = await _api.getMyTickets(authKey, userName, botId);
+    //   if (tickets != null) {
+    //     setState(ViewState.Busy);
+    //     _tickets = tickets;
+    //     _filteredTicketList = _tickets;
+    //     setState(ViewState.Idle);
+    //   }
+    // });
   }
 
   searchLogic(String keyword) {

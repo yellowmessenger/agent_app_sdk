@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:support_agent/core/enums/viewstate.dart';
+import 'package:support_agent/core/models/actions.dart';
+import 'package:support_agent/core/models/collaborators.dart';
 import 'package:support_agent/core/models/message_type.dart';
 import 'package:support_agent/core/models/messages.dart';
 import 'package:support_agent/core/models/send_message.dart';
@@ -18,6 +21,8 @@ import 'package:support_agent/core/services/custom_details.dart';
 import 'package:support_agent/core/services/ticket_service.dart';
 import 'package:support_agent/core/services/xmpp_service.dart';
 import 'package:support_agent/ui/shared/color.dart';
+import 'package:support_agent/ui/widgets/customfields.dart';
+import 'package:support_agent/ui/widgets/message_layout.dart';
 
 import '../../locator.dart';
 import 'base_model.dart';
@@ -33,6 +38,8 @@ class ChatModel extends BaseModel {
   XmppService _xmppService = locator<XmppService>();
   CustomDataService _customDataService = locator<CustomDataService>();
   Ticket _ticket;
+
+  AgentProfile agentProfile;
   Ticket get currentTicket => _ticket;
   List<Message> _messages;
   List<Message> get messages => _messages;
@@ -44,10 +51,17 @@ class ChatModel extends BaseModel {
   Timer _debounce;
   String query = "";
   int _debouncetime = 1500;
+  TicketSettings ticketSettings;
   CustomFields customFields;
   Map<String, dynamic> customFieldsWithNames;
   List<CannedResponse> cannedResponses = List<CannedResponse>();
   List<CannedResponse> filtered = List<CannedResponse>();
+  List<ActionResponses> actionResponses = List<ActionResponses>();
+  List<ActionResponses> filteredActions = List<ActionResponses>();
+  bool actionPending = false;
+  ActionResponses selectedAction;
+  Map actionParms = Map();
+  List<CollaboratorProfile> collaborators = List<CollaboratorProfile>();
 
   Future initChat(Ticket ticket, BuildContext context) async {
     setState(ViewState.Busy);
@@ -57,7 +71,13 @@ class ChatModel extends BaseModel {
     String botId = _botService.defaultBot.userName;
     String uid = ticket.uid;
     String ticketID = ticket.ticketId;
+
     _chatMessageController.addListener(_onMessageChanged);
+
+    var fetchCollabs = await _api.getCollaboratorsList(authKey, botId);
+    collaborators = fetchCollabs.data;
+
+    _ticket = await _api.getTicketInfo(authKey, ticketID, botId);
 
     var messages = await _api.getChatMessages(authKey, uid, botId, ticketID);
     if (messages != null) {
@@ -73,24 +93,84 @@ class ChatModel extends BaseModel {
     }
     messageEvents =
         _xmppService.chatStreamController.stream.listen(_updateMessageList);
-    // _configureSelectNotificationSubject(context);
     getSettings();
+    getActions();
     getTemplate();
 
     setState(ViewState.Idle);
-    messagePolling();
+    // messagePolling();
     return true;
   }
 
+  updateCollaborators(List<String> collabs) async {
+    var result = await _api.updateCollaboratorsList(
+        _authService.currentUserData.accessToken,
+        _botService.defaultBot.userName,
+        _ticket.ticketId,
+        collabs);
+
+    _ticket = await _api.getTicketInfo(_authService.currentUserData.accessToken,
+        _ticket.ticketId, _botService.defaultBot.userName);
+  }
+
+  List<Collaborators> getCurrentCollabs() {
+    for (var item in _ticket.collaborators) {
+      print(item.name);
+    }
+    return _ticket.collaborators;
+  }
+
+  getActions() async {
+    var actions = await _api.getActions(
+        _authService.currentUserData.accessToken,
+        _botService.defaultBot.userName);
+    setState(ViewState.Busy);
+    actionResponses = actions.data;
+    filteredActions = actionResponses;
+    setState(ViewState.Idle);
+  }
+
+  setAction(ActionResponses action) {
+    setState(ViewState.Busy);
+    actionPending = true;
+    selectedAction = action;
+    setState(ViewState.Idle);
+  }
+
+  sendAction() async {
+    Map data = {
+      "uid": _ticket.uid,
+      "source": _ticket.source,
+      "data": {'action': selectedAction.name, 'params': actionParms}
+    };
+
+    var actionSent = await _api.sendActions(
+        _authService.currentUserData.accessToken,
+        _botService.defaultBot.userName,
+        data);
+
+    setState(ViewState.Busy);
+    if (actionSent['data'] != null &&
+        actionSent['data']['messageArray'] != null)
+      _messages.add(Message(
+          message: actionSent['data']['messageArray'].length != 0
+              ? actionSent['data']['messageArray'][0]['message']
+              : "",
+          messageType: "AGENT",
+          messageFormat: "unsent",
+          created: DateTime.now()));
+    setState(ViewState.Idle);
+  }
+
+  Timer timer;
   messagePolling() {
     String authKey = _authService.currentUserData.accessToken;
     String botId = _botService.defaultBot.userName;
     String uid = _ticket.uid;
     String ticketID = _ticket.ticketId;
-    Timer.periodic(Duration(seconds: 10), (Timer t) async {
+    timer = Timer.periodic(Duration(seconds: 10), (Timer t) async {
       var messages = await _api.getChatMessages(authKey, uid, botId, ticketID);
       if (messages != null) {
-        // print("getting new messages");
         messages.data.sort((a, b) {
           var adate = a.created;
           var bdate = b.created;
@@ -104,11 +184,109 @@ class ChatModel extends BaseModel {
     });
   }
 
-  @override
-  void dispose() {
+  void disposeAll() {
     messageEvents.cancel();
     _ticketService.setCurrentTicketId("");
-    super.dispose();
+  }
+
+  void deleteActionMessage() {
+    setState(ViewState.Busy);
+    _messages.removeWhere((element) => element.messageFormat == "unsent");
+    _chatMessageController.clear();
+    actionPending = false;
+    setState(ViewState.Idle);
+  }
+
+  void _populateActionParms() {
+    actionParms.clear();
+
+    var paramText =
+        chatMessageController.text.replaceFirst(selectedAction.name, '');
+    final pattern = RegExp('\\s+');
+    paramText = paramText.replaceAll(pattern, " ").trim();
+    var paramsArray = paramText.split(' ');
+    setState(ViewState.Busy);
+    for (var i = 0; i < selectedAction.steps.length; i++) {
+      actionParms[selectedAction.steps[i].slug] =
+          paramsArray.length != i ? paramsArray[i] : "";
+    }
+    setState(ViewState.Idle);
+  }
+
+  showActionPrompt(BuildContext context) async {
+    _showConfirmDialog(context,
+        title: "Agent Action Parameters for ${selectedAction.name}",
+        child: showActionFields(), action: () {
+      Navigator.pop(context, 1);
+      sendAction().then((value) => chatMessageController.clear());
+    });
+  }
+
+  showActionFields() {
+    if (selectedAction.steps.length == 0) {
+      return null;
+    }
+
+    List<Widget> actionFieldsView = List<Widget>();
+    actionParms.forEach((key, value) {
+      actionFieldsView.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                capitalize(key),
+                style: GoogleFonts.roboto(
+                    fontWeight: FontWeight.w500,
+                    color: TextColorMedium,
+                    fontSize: 16),
+              ),
+              SizedBox(height: 6),
+              TextFormField(
+                validator: (text) {
+                  if (text == null || text.isEmpty) {
+                    return 'Text is empty';
+                  }
+                  return null;
+                },
+                initialValue: value,
+                decoration: InputDecoration(
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  hintText: key,
+                  labelText: key,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  hintStyle: GoogleFonts.roboto(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 18.0,
+                      color: TextColorLight),
+                ),
+                onChanged: (text) {
+                  // updateCustomFields(key, text);
+                  setState(ViewState.Busy);
+                  actionParms[key] = text;
+                  setState(ViewState.Idle);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: actionFieldsView,
+    );
   }
 
   _updateMessageList(String data) {
@@ -116,38 +294,51 @@ class ChatModel extends BaseModel {
     if (data != "Stream Connected")
       try {
         incoming = MessageFormat.fromJson(jsonDecode(data));
-        if (incoming.type == "sender" &&
-            incoming.ticketId == _ticket.ticketId) {
+
+        if (incoming.ticketId == _ticket.ticketId) {
           setState(ViewState.Busy);
           if (incoming.data['typing'] == null &&
-              incoming.data['message'] != null &&
-              _messages[_messages.length - 1].message !=
-                  incoming.data['message']) {
+                  incoming.data["event"] == null &&
+                  incoming.data['message'] != null
+              // && _messages[_messages.length - 1].message !=
+              //     incoming.data['message']
+              ) {
             _messages.add(Message(
+                sender: incoming.agentId,
                 message: incoming.data['message'],
-                messageType: "USER",
-                messageFormat: "text"));
-          } else if (incoming.data['typing'] == null &&
-              incoming.data['image'] != null) {
+                messageType: incoming.messageType,
+                messageFormat: "text",
+                replyTo: incoming.data['replyTo'] ?? null));
+          } else if (incoming.data["event"] != null) {
+            //to set events
             _messages.add(Message(
+                message: incoming.data["event"]["data"]["message"],
+                messageType: incoming.messageType ?? "BOT",
+                messageFormat: "event",
+                replyTo: null));
+          } else if (incoming.data['image'] != null) {
+            _messages.add(Message(
+                sender: incoming.agentId,
                 message: incoming.data['image'],
-                messageType: "USER",
-                messageFormat: "image"));
-          } else if (incoming.data['typing'] == null &&
-              incoming.data['file'] != null) {
+                messageType: incoming.messageType,
+                messageFormat: "image",
+                replyTo: incoming.data['replyTo'] ?? null));
+          } else if (incoming.data['file'] != null) {
             _messages.add(Message(
+                sender: incoming.agentId,
                 message: incoming.data['file'],
-                messageType: "USER",
-                messageFormat: "file"));
+                messageType: incoming.messageType,
+                messageFormat: "file",
+                replyTo: incoming.data['replyTo'] ?? null));
+          } else if (incoming.data['video'] != null) {
+            _messages.add(Message(
+                sender: incoming.agentId,
+                message: incoming.data['video'],
+                messageType: incoming.messageType,
+                messageFormat: "video",
+                replyTo: incoming.data['replyTo'] ?? null));
           } else {
             showTyping(incoming.data['typing']);
-          }
-        } else if (incoming.type == "sender" &&
-            incoming.ticketId != _ticket.ticketId) {
-          if (incoming.data['typing'] == null &&
-              incoming.data['message'] != null) {
-            // sendNotification(incoming.contact.name, incoming.data['message'],
-            // payload: incoming.ticketId);
           }
         }
       } catch (e) {
@@ -159,7 +350,9 @@ class ChatModel extends BaseModel {
   _onMessageChanged() {
     if (_debounce?.isActive ?? false) _debounce.cancel();
     _debounce = Timer(Duration(milliseconds: _debouncetime), () {
-      sendMessage(msg: _chatMessageController.text, typing: false);
+      if (!actionPending) {
+        sendMessage(msg: _chatMessageController.text, typing: false);
+      }
     });
   }
 
@@ -169,40 +362,47 @@ class ChatModel extends BaseModel {
     setState(ViewState.Idle);
   }
 
-  sendMessage({String msg, bool typing}) async {
-    SendMessage myMessage = SendMessage(
-        message: "",
-        messageType: "AGENT",
-        agentId: "you",
-        uid: _ticket.uid,
-        source: _ticket.source,
-        created: DateTime.now().toIso8601String(),
-        ticketId: _ticket.ticketId,
-        type: "object");
-    String message, type;
-    if (typing != null) {
-      message = "{\"typing\":${typing.toString()}}";
-      type = "object";
+  sendMessage({
+    String msg,
+    bool typing,
+  }) async {
+    if (actionPending) {
+      _populateActionParms();
     } else {
-      Map messageJson = {"message": msg};
-      // message = "{\"message\":\"${json.encode(msg)}\"}";
-      message = jsonEncode(messageJson);
-      type = "message";
-    }
-    myMessage.message = message;
-    myMessage.type = type;
-    if (type == "object" || msg != "") {
-      await _api.sendMessage(_authService.currentUserData.accessToken,
-          _botService.defaultBot.userName, myMessage);
-      if (typing == null) {
-        setState(ViewState.Busy);
-        chatMessageController.clear();
-        _messages.add(Message(
-            message: msg,
-            messageType: "AGENT",
-            messageFormat: "text",
-            created: DateTime.now()));
-        setState(ViewState.Idle);
+      SendMessage myMessage = SendMessage(
+          message: "",
+          messageType: "AGENT",
+          agentId: "you",
+          uid: _ticket.uid,
+          source: _ticket.source,
+          created: DateTime.now().toIso8601String(),
+          ticketId: _ticket.ticketId,
+          type: "object");
+      String message, type;
+      if (typing != null) {
+        message = "{\"typing\":${typing.toString()}}";
+        type = "object";
+      } else {
+        Map messageJson = {"message": msg};
+        // message = "{\"message\":\"${json.encode(msg)}\"}";
+        message = jsonEncode(messageJson);
+        type = "message";
+      }
+      myMessage.message = message;
+      myMessage.type = type;
+      if (type == "object" || msg != "") {
+        await _api.sendMessage(_authService.currentUserData.accessToken,
+            _botService.defaultBot.userName, myMessage);
+        if (typing == null) {
+          setState(ViewState.Busy);
+          chatMessageController.clear();
+          _messages.add(Message(
+              message: msg,
+              messageType: "AGENT",
+              messageFormat: "text",
+              created: DateTime.now()));
+          setState(ViewState.Idle);
+        }
       }
     }
   }
@@ -233,9 +433,9 @@ class ChatModel extends BaseModel {
     } else {
       await _customDataService.getCustomData();
 
-      _showConfirmDialog(context,
+      _showCustomFieldsDialog(context,
           title: "Please fill the following",
-          child: showCustomFields(), action: () {
+          child: showCustomFields(context), action: () {
         Navigator.pop(context, 1);
         _showConfirmDialog(context,
             title: "Are you Sure?",
@@ -255,13 +455,13 @@ class ChatModel extends BaseModel {
     }
   }
 
-  showCustomFields() {
+  showCustomFields(BuildContext context) {
     if (customFields.fields.length == 0) {
       return null;
     }
 
     List<Widget> customFieldsView = List<Widget>();
-    customFields.fields.forEach((key, value) {
+    customFields.fields.forEach((fieldKey, value) {
       if (value.requiredToCloseTicket)
         customFieldsView.add(
           Padding(
@@ -277,76 +477,95 @@ class ChatModel extends BaseModel {
                       fontSize: 16),
                 ),
                 SizedBox(height: 6),
-                TextFormField(
-                  validator: (text) {
-                    if (text == null || text.isEmpty) {
-                      return 'Text is empty';
-                    }
-                    return null;
-                  },
-                  initialValue: currentTicket.customFieldsValues != null
-                      ? currentTicket.customFieldsValues.fields[key]
-                      : _customDataService.customData != null &&
-                              _customDataService.customData.containsKey(
-                                  _botService.defaultBot.userName) &&
-                              _customDataService
-                                  .customData[_botService.defaultBot.userName]
-                                  .containsKey(_ticket.ticketId)
-                          ? _customDataService
-                                  .customData[_botService.defaultBot.userName]
-                              [_ticket.ticketId][key]
-                          : "",
-                  decoration: InputDecoration(
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    hintText: value.description,
-                    labelText: value.description,
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                      borderSide: BorderSide(color: Colors.grey),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                      borderSide: BorderSide(color: Colors.grey),
-                    ),
-                    hintStyle: GoogleFonts.roboto(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 18.0,
-                        color: TextColorLight),
-                  ),
-                  onFieldSubmitted: (text) {
-                    updateCustomFields(key, text);
-                    setState(ViewState.Busy);
-                    currentTicket.customFieldsValues.fields[key] = text;
-                    setState(ViewState.Idle);
-                  },
-                ),
+                value.type == "checkboxes"
+                    ? CheckBoxCustomWidget(value, this, fieldKey)
+                    : value.type == "date"
+                        ? DateCustomFieldWidget(value, this, fieldKey)
+                        : value.type == "tags"
+                            ? TagsCustomFieldWidget(value, this, fieldKey)
+                            : TextFormField(
+                                validator: (text) {
+                                  if (text == null || text.isEmpty) {
+                                    return 'Text is empty';
+                                  }
+                                  return null;
+                                },
+                                initialValue: currentTicket.customFieldsValues != null
+                                    ? currentTicket
+                                        .customFieldsValues.fields[fieldKey]
+                                    : _customDataService.customData != null &&
+                                            _customDataService.customData
+                                                .containsKey(_botService
+                                                    .defaultBot.userName) &&
+                                            _customDataService.customData[
+                                                    _botService
+                                                        .defaultBot.userName]
+                                                .containsKey(_ticket.ticketId)
+                                        ? _customDataService
+                                                .customData[_botService.defaultBot.userName]
+                                            [_ticket.ticketId][fieldKey]
+                                        : "",
+                                decoration: InputDecoration(
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 10),
+                                  hintText: value.description,
+                                  labelText: value.description,
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(10.0)),
+                                    borderSide: BorderSide(color: Colors.grey),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(10.0)),
+                                    borderSide: BorderSide(color: Colors.grey),
+                                  ),
+                                  hintStyle: GoogleFonts.roboto(
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 18.0,
+                                      color: TextColorLight),
+                                ),
+                                onChanged: (text) {
+                                  updateCustomFields(fieldKey, text);
+                                  setState(ViewState.Busy);
+                                  currentTicket.customFieldsValues
+                                      .fields[fieldKey] = text;
+                                  setState(ViewState.Idle);
+                                },
+                              ),
               ],
             ),
           ),
         );
     });
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: customFieldsView,
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: customFieldsView),
+        ),
+      ),
     );
   }
 
-  updateCustomFields(String fieldKey, String fieldValue) async {
-    var update = await _api.updateCustomFields(
+  updateCustomFields(String fieldKey, dynamic fieldValue) async {
+    await _api.updateCustomFields(
         _authService.currentUserData.accessToken,
         _botService.defaultBot.userName,
         currentTicket.ticketId,
         {fieldKey: fieldValue});
-    print(update);
+    // print(update);
   }
 
   transferTicket() async {
-    String authKey = _authService.currentUserData.accessToken;
-    String botId = _botService.defaultBot.userName;
-    String ticketId = _ticket.ticketId;
+    // String authKey = _authService.currentUserData.accessToken;
+    // String botId = _botService.defaultBot.userName;
+    // String ticketId = _ticket.ticketId;
 
     // var tResponse = await _api.transferTicket(authKey, botId, ticketId);
     // if(closeResponse != null){
@@ -357,7 +576,7 @@ class ChatModel extends BaseModel {
   uploadImage(String path, BuildContext context) async {
     _showAlertDialog(context);
     var res;
-    print(path);
+    // print(path);
     await _api
         .uploadImage(_authService.currentUserData.accessToken,
             _botService.defaultBot.userName, path)
@@ -431,6 +650,15 @@ class ChatModel extends BaseModel {
         _botService.defaultBot.userName);
     setState(ViewState.Busy);
     customFields = settings.data.settings.customFields;
+    ticketSettings = settings;
+
+    var ticketInfo = await _api.getTicketInfo(
+        _authService.currentUserData.accessToken,
+        _ticket.ticketId,
+        _botService.defaultBot.userName);
+
+    agentProfile = ticketInfo.agentProfile;
+
     if (customFields != null)
       customFieldsWithNames = generateUniqueCustomFieldNames(customFields);
     setState(ViewState.Idle);
@@ -485,6 +713,54 @@ class ChatModel extends BaseModel {
       context: context,
       builder: (BuildContext context) {
         return alert;
+      },
+    );
+  }
+
+  _showCustomFieldsDialog(BuildContext context,
+      {String title, Widget child, Function() action}) {
+    Widget alert = Container(
+        color: Colors.white,
+        child: Column(children: <Widget>[
+          AppBar(
+            title: Text(title ?? "Please wait..."),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: child ?? SizedBox.shrink(),
+          ),
+          Divider(),
+          Container(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                FlatButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      "Cancel",
+                      style: GoogleFonts.roboto(
+                          fontWeight: FontWeight.w500,
+                          color: Danger,
+                          fontSize: 16),
+                    )),
+                FlatButton(
+                    onPressed: action,
+                    child: Text(
+                      "Confirm",
+                      style: GoogleFonts.roboto(
+                          fontWeight: FontWeight.w500,
+                          color: AccentBlue,
+                          fontSize: 16),
+                    ))
+              ],
+            ),
+          ),
+        ]));
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Material(child: alert);
       },
     );
   }
@@ -588,5 +864,48 @@ class ChatModel extends BaseModel {
       "nameMap": keyToGeneratedNameMap,
       "fields": customFieldNames,
     };
+  }
+
+  replyToAction(String replyTo, BuildContext context) async {
+    var replyMessage = await _api.getReplyMessage(
+        _authService.currentUserData.accessToken,
+        _botService.defaultBot.userName,
+        replyTo);
+    var replyMessageResponse = Message.fromJson(replyMessage["data"]);
+    String msg;
+    if (replyMessageResponse.message[0] == "{" &&
+        replyMessageResponse.message[replyMessageResponse.message.length - 1] ==
+            "}") {
+      try {
+        Map<String, dynamic> currentMsg =
+            json.decode(replyMessageResponse.message);
+        msg = currentMsg['message'] ?? "";
+      } catch (e) {}
+    } else {
+      msg = replyMessageResponse.message;
+    }
+    _showAlertDialog(
+      context,
+      title:
+          "Original message was sent by ${capitalize(replyMessageResponse.messageType)}",
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: AccentBlue,
+              width: 4.0,
+            ),
+          ),
+        ),
+        child: Padding(
+                padding: const EdgeInsets.only(left: 15, top: 5, bottom: 5),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: MessageLayout([replyMessageResponse],
+                      MediaQuery.of(context).size.width, this, context),
+                )) ??
+            SizedBox.shrink(),
+      ),
+    );
   }
 }

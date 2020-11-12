@@ -1,5 +1,5 @@
-import 'dart:convert';
-import 'dart:math';
+import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
+import 'package:intl/intl.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -96,7 +96,7 @@ class TicketInfo extends StatelessWidget {
                                                   lableBody: capitalize(model
                                                       .currentTicket.status),
                                                 ),
-                                                // tagsInfo(model),
+                                                tagsInfo(model),
                                                 notesInfo(model),
                                               ]))),
                                   model.customFields != null
@@ -127,18 +127,36 @@ class TicketInfo extends StatelessWidget {
                                                     "Contact Details"),
                                                 InfoData(
                                                   "Name",
-                                                  lableBody: model.currentTicket
-                                                      .contact.name,
+                                                  bodyWidget:
+                                                      CustomTextFieldWidget(
+                                                    value:
+                                                        model.contactDetailsMap[
+                                                            "Name"],
+                                                    fieldkey: "Name",
+                                                    model: model,
+                                                  ),
                                                 ),
                                                 InfoData(
                                                   "Email",
-                                                  lableBody: model.currentTicket
-                                                      .contact.email,
+                                                  bodyWidget:
+                                                      CustomTextFieldWidget(
+                                                    value:
+                                                        model.contactDetailsMap[
+                                                            "Email"],
+                                                    fieldkey: "Email",
+                                                    model: model,
+                                                  ),
                                                 ),
                                                 InfoData(
                                                   "Phone",
-                                                  lableBody: model.currentTicket
-                                                      .contact.phone,
+                                                  bodyWidget:
+                                                      CustomTextFieldWidget(
+                                                    value:
+                                                        model.contactDetailsMap[
+                                                            "Phone"],
+                                                    fieldkey: "Phone",
+                                                    model: model,
+                                                  ),
                                                 ),
                                               ]))),
                                   if (model.botUserProfile.data.profileData !=
@@ -225,52 +243,12 @@ class TicketInfo extends StatelessWidget {
       bodyWidget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          DropdownButtonFormField(
-            decoration: InputDecoration(
-              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-              hintText: 'Tags',
-              labelText: 'Tags',
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                borderSide: BorderSide(color: Colors.grey),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                borderSide: BorderSide(color: Colors.grey),
-              ),
-            ),
-            isDense: true,
-            items: model.ticketTags
-                .map((tag) => DropdownMenuItem(
-                    value: tag,
-                    child: Text(
-                      tag,
-                    )))
-                .toList(),
-            onChanged: (String value) {
-              model.addTags(value);
-            },
-          ),
-          Wrap(
-            children:
-                // TextField(),
-                model.currentTicket.tags
-                    .map((f) => Padding(
-                          padding: const EdgeInsets.only(right: 2),
-                          child: Chip(
-                              padding: const EdgeInsets.all(6),
-                              backgroundColor: AccentBlue.withOpacity(0.2),
-                              onDeleted: () {
-                                model.addTags(f);
-                              },
-                              deleteIconColor: AccentBlue,
-                              labelPadding: EdgeInsets.all(1),
-                              labelStyle: GoogleFonts.roboto(
-                                  fontSize: 12, color: AccentBlue),
-                              label: Text(capitalize(f))),
-                        ))
-                    .toList(),
-          ),
+          TagsWidget(
+              model.ticketTags
+                  .map((e) =>
+                      CustomTags(e, model.currentTicket.tags.contains(e)))
+                  .toList(),
+              model),
         ],
       ),
     );
@@ -281,6 +259,161 @@ class TicketInfo extends StatelessWidget {
   }
 }
 
+class TagsWidget extends StatefulWidget {
+  final List<CustomTags> tags;
+  final TicketInfoModel model;
+
+  const TagsWidget(this.tags, this.model);
+
+  @override
+  _TagsWidgetState createState() => _TagsWidgetState();
+}
+
+class _TagsWidgetState extends State<TagsWidget> {
+  bool showSuggestion = false;
+  List<CustomTags> selectedTags = List<CustomTags>();
+  List<String> userSelectedTags = List<String>();
+
+  @override
+  void initState() {
+    super.initState();
+    selectedTags = widget.tags;
+    selectedTags.forEach((e) {
+      if (e.selected) userSelectedTags.add(e.name);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          width: double.infinity,
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              border: Border.all(color: Colors.grey)),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Wrap(
+                  children: selectedTags
+                      .map((f) => Padding(
+                          padding: const EdgeInsets.only(right: 2),
+                          child: f.selected
+                              ? Chip(
+                                  padding: const EdgeInsets.all(6),
+                                  backgroundColor: AccentBlue.withOpacity(0.2),
+                                  onDeleted: () {
+                                    // widget.model.addTags(f.name);
+                                    setState(() {
+                                      selectedTags.forEach((element) {
+                                        if (element.name == f.name) {
+                                          element.selected = !element.selected;
+                                          userSelectedTags.remove(element.name);
+                                        }
+                                      });
+                                      // update tags on backend.
+                                      widget.model
+                                          .updateTicketTags(userSelectedTags);
+                                    });
+                                  },
+                                  deleteIconColor: AccentBlue,
+                                  labelPadding: EdgeInsets.all(1),
+                                  labelStyle: GoogleFonts.roboto(
+                                      fontSize: 12, color: AccentBlue),
+                                  label: Text(capitalize(f.name)))
+                              : SizedBox.shrink()))
+                      .toList(),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                    showSuggestion
+                        ? Icons.arrow_drop_up
+                        : Icons.arrow_drop_down,
+                    size: 30,
+                    color: Colors.black.withOpacity(0.4)),
+                onPressed: () {
+                  setState(() {
+                    showSuggestion = !showSuggestion;
+                  });
+                  // model.setEditingNotes(true);
+                },
+              )
+            ],
+          ),
+        ),
+        if (showSuggestion)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(10.0),
+                  bottomLeft: Radius.circular(10.0)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  spreadRadius: 2,
+                  blurRadius: 3,
+                  offset: Offset(0, 2), // changes position of shadow
+                ),
+              ],
+            ),
+            child: Column(
+              children: selectedTags
+                  .map((f) => !f.selected
+                      ? Column(
+                          children: <Widget>[
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedTags.forEach((element) {
+                                    if (element.name == f.name) {
+                                      element.selected = !element.selected;
+                                      userSelectedTags.add(element.name);
+                                    }
+                                  });
+                                });
+                                //  update tags on backend.
+                                widget.model.updateTicketTags(userSelectedTags);
+
+                                // model.setEditingNotes(true);
+                              },
+                              child: Container(
+                                margin: EdgeInsets.symmetric(vertical: 10),
+                                height: 16,
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Text(
+                                        capitalize(f.name),
+                                        style: GoogleFonts.roboto(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Divider(
+                              color: Colors.grey,
+                            )
+                          ],
+                        )
+                      : SizedBox.shrink())
+                  .toList(),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class ShowCustomFields extends StatelessWidget {
   final TicketInfoModel model;
   ShowCustomFields({this.model});
@@ -288,14 +421,29 @@ class ShowCustomFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<Widget> customFields = List<Widget>();
+    int i = 0;
     model.customFields.fields.forEach((key, value) {
+      i++;
+
       customFields.add(
         InfoData(capitalize(value.name),
+            action: i % 3 == 0
+                ? Container(
+                    child: Icon(
+                      Icons.backup,
+                      color: Danger,
+                    ),
+                  )
+                : null,
             bodyWidget: Column(
               children: <Widget>[
-                value.type != "checkboxes"
-                    ? TextFieldWidget(value, model, key)
-                    : CheckBoxWidget(value, model, key),
+                value.type == "checkboxes"
+                    ? CheckBoxWidget(value, model, key)
+                    : value.type == "date"
+                        ? DateFieldWidget(value, model, key)
+                        : value.type == "tags"
+                            ? TagsFieldWidget(value, model, key)
+                            : TextFieldWidget(value, model, key),
               ],
             )),
       );
@@ -314,7 +462,6 @@ class ShowCustomFields extends StatelessWidget {
                   onPressed: () async {
                     var updateResponse = await model.sendCustomData();
                     if (updateResponse['success'] != true) {
-                      print(updateResponse['message']);
                       final snackBar = SnackBar(
                           elevation: 4.0,
                           backgroundColor: Colors.white,
@@ -348,6 +495,40 @@ class ShowCustomFields extends StatelessWidget {
                             ],
                           ));
                       Scaffold.of(context).showSnackBar(snackBar);
+                    } else {
+                      final snackBar = SnackBar(
+                          elevation: 4.0,
+                          backgroundColor: Colors.white,
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Container(
+                                color: Success,
+                                height: 2,
+                              ),
+                              ListTile(
+                                  leading: Icon(
+                                    Icons.info_outline,
+                                    color: Success,
+                                  ),
+                                  title: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8.0),
+                                    child: Text("Custom Fields Updated",
+                                        style: GoogleFonts.roboto(
+                                            fontWeight: FontWeight.w400,
+                                            fontSize: 20,
+                                            color: TextColorDark)),
+                                  ),
+                                  subtitle: Text(
+                                      updateResponse['message'] ?? "",
+                                      style: GoogleFonts.roboto(
+                                          fontWeight: FontWeight.w400,
+                                          fontSize: 16,
+                                          color: TextColorDark))),
+                            ],
+                          ));
+                      Scaffold.of(context).showSnackBar(snackBar);
                     }
                   },
                   child: Text("Save Ticket Details",
@@ -358,8 +539,187 @@ class ShowCustomFields extends StatelessWidget {
             )
           ]),
     );
-    return ExpansionTile(
-        title: SectionHeader("Ticket Extra Details"), children: customFields);
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
+      child: ExpansionTile(
+          initiallyExpanded: true,
+          title: SectionHeader("Ticket Extra Details"),
+          children: customFields),
+    );
+  }
+}
+
+class CustomTags {
+  String name;
+  bool selected;
+
+  CustomTags(this.name, this.selected);
+
+  @override
+  String toString() {
+    return '{ ${this.name}, ${this.selected} }';
+  }
+}
+
+class TagsFieldWidget extends StatefulWidget {
+  final Field value;
+  final TicketInfoModel model;
+  final String fieldKey;
+
+  const TagsFieldWidget(this.value, this.model, this.fieldKey);
+
+  @override
+  _TagsFieldWidgetState createState() => _TagsFieldWidgetState();
+}
+
+class _TagsFieldWidgetState extends State<TagsFieldWidget> {
+  bool showSuggestion = false;
+  List<CustomTags> selectedTags = List<CustomTags>();
+  List<dynamic> userSelectedTags = List<dynamic>();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.model.customFieldsValues[widget.fieldKey] != null)
+      userSelectedTags = widget.model.customFieldsValues[widget.fieldKey];
+    for (var item in widget.value.tags) {
+      if (userSelectedTags != null)
+        selectedTags.add(CustomTags(item, userSelectedTags.contains(item)));
+      else
+        selectedTags.add(CustomTags(item, false));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          width: double.infinity,
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              border: Border.all(color: Colors.grey)),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Wrap(
+                  children: selectedTags
+                      .map((f) => Padding(
+                          padding: const EdgeInsets.only(right: 2),
+                          child: f.selected
+                              ? Chip(
+                                  padding: const EdgeInsets.all(6),
+                                  backgroundColor: AccentBlue.withOpacity(0.2),
+                                  onDeleted: () {
+                                    // widget.model.addTags(f.name);
+                                    setState(() {
+                                      selectedTags.forEach((element) {
+                                        if (element.name == f.name) {
+                                          element.selected = !element.selected;
+                                          userSelectedTags.remove(element.name);
+                                        }
+                                        widget.model.updateCustomFields(
+                                            widget.fieldKey, userSelectedTags);
+                                        // : element.selected = false;
+                                      });
+                                    });
+                                  },
+                                  deleteIconColor: AccentBlue,
+                                  labelPadding: EdgeInsets.all(1),
+                                  labelStyle: GoogleFonts.roboto(
+                                      fontSize: 12, color: AccentBlue),
+                                  label: Text(capitalize(f.name)))
+                              : SizedBox.shrink()))
+                      .toList(),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                    showSuggestion
+                        ? Icons.arrow_drop_up
+                        : Icons.arrow_drop_down,
+                    size: 30,
+                    color: Colors.black.withOpacity(0.4)),
+                onPressed: () {
+                  setState(() {
+                    showSuggestion = !showSuggestion;
+                  });
+                  // model.setEditingNotes(true);
+                },
+              )
+            ],
+          ),
+        ),
+        if (showSuggestion)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(10.0),
+                  bottomLeft: Radius.circular(10.0)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  spreadRadius: 2,
+                  blurRadius: 3,
+                  offset: Offset(0, 2), // changes position of shadow
+                ),
+              ],
+            ),
+            child: Column(
+              children: selectedTags
+                  .map((f) => !f.selected
+                      ? Column(
+                          children: <Widget>[
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedTags.forEach((element) {
+                                    if (element.name == f.name) {
+                                      element.selected = !element.selected;
+                                      userSelectedTags.add(element.name);
+                                    }
+                                    // : element.selected = false;
+                                  });
+
+                                  widget.model.updateCustomFields(
+                                      widget.fieldKey, userSelectedTags);
+                                });
+
+                                // model.setEditingNotes(true);
+                              },
+                              child: Container(
+                                margin: EdgeInsets.symmetric(vertical: 10),
+                                height: 16,
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Text(
+                                        capitalize(f.name),
+                                        style: GoogleFonts.roboto(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Divider(
+                              color: Colors.grey,
+                            )
+                          ],
+                        )
+                      : SizedBox.shrink())
+                  .toList(),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -372,9 +732,15 @@ class TextFieldWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      initialValue: model.customFieldsValues != null
-          ? model.customFieldsValues[fieldKey]
-          : "",
+      keyboardType: value.type == "number"
+          ? TextInputType.numberWithOptions(signed: false, decimal: false)
+          : value.type == "longText"
+              ? TextInputType.multiline
+              : TextInputType.text,
+      initialValue: model.customFieldsValues != null &&
+              model.customFieldsValues[fieldKey] != null
+          ? model.customFieldsValues[fieldKey].toString()
+          : value.type == "number" ? "0" : "",
       decoration: InputDecoration(
         contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         hintText: value.description,
@@ -392,8 +758,99 @@ class TextFieldWidget extends StatelessWidget {
         hintStyle: GoogleFonts.roboto(
             fontWeight: FontWeight.w400, fontSize: 16.0, color: TextColorLight),
       ),
-      onFieldSubmitted: (text) => model.updateCustomFields(fieldKey, text),
+      onChanged: (text) => model.updateCustomFields(fieldKey,
+          value.type == "number" ? text == "" ? 0 : int.tryParse(text) : text),
     );
+  }
+}
+
+class DateFieldWidget extends StatefulWidget {
+  final Field value;
+  final TicketInfoModel model;
+  final String fieldKey;
+  DateFieldWidget(this.value, this.model, this.fieldKey);
+
+  @override
+  _DateFieldWidgetState createState() => _DateFieldWidgetState();
+}
+
+class _DateFieldWidgetState extends State<DateFieldWidget> {
+  DateTime selectedDate = DateTime.now();
+  var myFormat = DateFormat('d-MM-yyyy');
+
+  _selectDate(BuildContext context) async {
+    final DateTime picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate, // Refer step 1
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2025),
+    );
+    if (picked != null && picked != selectedDate)
+      setState(() {
+        selectedDate = picked;
+      });
+    // widget.model
+    //     .updateCustomFields(widget.fieldKey, widget.textEditingController.text);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    selectedDate = widget.model.customFieldsValues != null &&
+            widget.model.customFieldsValues[widget.fieldKey] != null
+        ? DateTime.parse(widget.model.customFieldsValues[widget.fieldKey])
+        : DateTime.now();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.grey,
+        ),
+        borderRadius: BorderRadius.all(
+          Radius.circular(10),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: BasicDateField((value) {
+              if (value != null)
+                widget.model.updateCustomFields(widget.fieldKey, value);
+            }, selectedDate),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BasicDateField extends StatelessWidget {
+  final format = DateFormat("dd-MM-yyyy");
+  final Function callBack;
+  final DateTime currentDate;
+
+  BasicDateField(this.callBack, this.currentDate);
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: <Widget>[
+      DateTimeField(
+        initialValue: currentDate.toLocal(),
+        format: format,
+        onShowPicker: (context, currentValue) {
+          return showDatePicker(
+              context: context,
+              firstDate: DateTime(1900),
+              initialDate: currentValue ?? DateTime.now(),
+              lastDate: DateTime(2100));
+        },
+        onChanged: (value) => callBack(value?.toUtc()?.toIso8601String()),
+      ),
+    ]);
   }
 }
 
@@ -445,13 +902,49 @@ class _CheckBoxWidgetState extends State<CheckBoxWidget> {
                     checkedValues[e] = newValue;
                   });
                   widget.model.updateCustomFields(
-                      widget.fieldKey, getAllChecked(),
-                      checkbox: true);
+                    widget.fieldKey,
+                    getAllChecked(),
+                  );
                 },
                 controlAffinity:
                     ListTileControlAffinity.leading, //  <-- leading Checkbox
               ))
           .toList(),
+    );
+  }
+}
+
+class CustomTextFieldWidget extends StatelessWidget {
+  final String fieldkey;
+  final String value;
+  final TicketInfoModel model;
+  CustomTextFieldWidget({this.fieldkey, this.value, this.model});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      initialValue: value != null ? value : "",
+      decoration: InputDecoration(
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        hintText: fieldkey,
+        labelText: fieldkey,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10.0)),
+          borderSide: BorderSide(color: Colors.grey),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10.0)),
+          borderSide: BorderSide(color: Colors.grey),
+        ),
+        hintStyle: GoogleFonts.roboto(
+            fontWeight: FontWeight.w400, fontSize: 16.0, color: TextColorLight),
+      ),
+      onChanged: (text) {
+        model.updateContactData(fieldkey, text);
+      },
+      // onFieldSubmitted: (text) => model.updateContactData(fieldkey, text),
     );
   }
 }
@@ -573,7 +1066,6 @@ class _NoteDataState extends State<NoteData> {
                     ),
                     FlatButton(
                         onPressed: () {
-                          print(notesController.text);
                           setState(() {
                             notesController_closed.text = notesController.text;
                           });

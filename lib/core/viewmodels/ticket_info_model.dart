@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:support_agent/core/enums/viewstate.dart';
 import 'package:support_agent/core/models/bot_user_profile.dart';
+import 'package:support_agent/core/models/contact.dart';
 import 'package:support_agent/core/models/ticket_settings.dart';
 import 'package:support_agent/core/models/tickets.dart';
 import 'package:support_agent/core/services/api.dart';
@@ -31,6 +32,7 @@ class TicketInfoModel extends BaseModel {
   bool get editingNotes => _editingNotes;
   CustomFields customFields;
   Map<String, dynamic> customFieldValues = Map<String, dynamic>();
+  Map<String, String> contactDetailsMap = Map<String, String>();
 
   get customFieldsValues => customFieldValues;
 
@@ -41,8 +43,10 @@ class TicketInfoModel extends BaseModel {
     String botId = _botService.defaultBot.userName;
     String uid = ticket.uid;
     String source = ticket.source;
+    _ticket = await _api.getTicketInfo(authKey, ticket.ticketId, botId);
 
-    var botStatusResponse = await _api.getBotStatus(authKey, botId, uid);
+    var botStatusResponse =
+        await _api.getBotStatus(authKey, botId, uid, source);
     _botStatus = botStatusResponse.data.paused != null
         ? botStatusResponse.data.paused ? false : true
         : true;
@@ -55,15 +59,22 @@ class TicketInfoModel extends BaseModel {
     getSettings();
     await _customDataService.getCustomData();
 
+    contactDetailsMap = {
+      "Name": currentTicket.contact.name,
+      "Phone": currentTicket.contact.phone,
+      "Email": currentTicket.contact.email
+    };
+
     setState(ViewState.Idle);
     return true;
   }
 
-  addTags(String val) {
-    // print(val);
-  }
-  removeTags(String val) {
-    // print(val);
+  updateTicketTags(List<String> tags) async {
+    var update = await _api.updateTicketTags(
+        _authService.currentUserData.accessToken,
+        _botService.defaultBot.userName,
+        currentTicket.ticketId,
+        tags);
   }
 
   changeBotStatus() {}
@@ -92,10 +103,13 @@ class TicketInfoModel extends BaseModel {
         customFieldValues = _customDataService
             .customData[_botService.defaultBot.userName][_ticket.ticketId];
       }
-      // Setting values form current ticket details
+      // Setting values from current ticket details
       else if (currentTicket.customFieldsValues != null) {
         customFields.fields.forEach((key, value) {
-          customFieldValues[key] = currentTicket.customFieldsValues.fields[key];
+          customFieldValues[key] =
+              value.type == "checkboxes" || value.type == "tags"
+                  ? []
+                  : currentTicket.customFieldsValues.fields[key];
         });
       }
     }
@@ -110,8 +124,10 @@ class TicketInfoModel extends BaseModel {
         note);
   }
 
-  updateCustomFields(String fieldKey, dynamic fieldValue,
-      {bool checkbox}) async {
+  updateCustomFields(
+    String fieldKey,
+    dynamic fieldValue,
+  ) async {
     setState(ViewState.Busy);
     customFieldValues[fieldKey] = fieldValue;
     _customDataService.setDefault({
@@ -130,6 +146,27 @@ class TicketInfoModel extends BaseModel {
         customFieldValues
           ..removeWhere(
               (dynamic key, dynamic value) => key == null || value == null));
+
     return update;
+  }
+
+  updateContactData(String key, String value) {
+    setState(ViewState.Busy);
+    contactDetailsMap[key] = value;
+    print("Changing $key to $value");
+    updateContactDetails();
+    setState(ViewState.Idle);
+  }
+
+  updateContactDetails() async {
+    setState(ViewState.Busy);
+    print("Updating Contact details");
+    await _api.updateContactDetails(
+        _authService.currentUserData.accessToken,
+        _botService.defaultBot.userName,
+        currentTicket.ticketId,
+        ContactDetails(contactDetailsMap["Name"], contactDetailsMap["Phone"],
+            contactDetailsMap["Email"]));
+    setState(ViewState.Idle);
   }
 }

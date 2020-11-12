@@ -15,7 +15,22 @@ class TicketList {
   }
 }
 
+class SingleTicket {
+  Ticket ticket;
+  bool success;
+  String message;
+  SingleTicket({this.message, this.success, this.ticket});
+  SingleTicket.fromJson(Map<String, dynamic> json) {
+    success = json['success'];
+    message = json['message'];
+    if (json['data'] != null) {
+      ticket = Ticket.fromJson(json['data']);
+    }
+  }
+}
+
 class Ticket {
+  String sortingTime;
   List<String> tags;
   bool responded;
   String note;
@@ -25,8 +40,8 @@ class Ticket {
   List<String> comments;
   bool assignedByAdmin;
   bool manualAssignment;
-  int lastAgentMessageTime;
-  int lastUserMessageTime;
+  String lastAgentMessageTime;
+  String lastUserMessageTime;
   int replyCount;
   String sId;
   String ticketId;
@@ -51,6 +66,8 @@ class Ticket {
   String resolvedTime;
   double avgResponseTime;
   CustomFieldsValues customFieldsValues;
+  bool typing = false;
+  List<Collaborators> collaborators;
 
   Ticket(
       {this.tags,
@@ -87,20 +104,21 @@ class Ticket {
       this.agentProfile,
       this.resolvedTime,
       this.avgResponseTime,
-      this.customFieldsValues});
+      this.customFieldsValues,
+      this.collaborators});
 
   Ticket.fromJson(Map<String, dynamic> json) {
-    tags = json['tags'].cast<String>();
+    tags = json['tags']?.cast<String>();
     responded = json['responded'];
     note = json['note'];
     ticketType = json['ticketType'];
     ticketCsatScore = json['ticketCsatScore'];
     agentCsatScore = json['agentCsatScore'];
-    comments = json['comments'].cast<String>();
+    comments = json['comments']?.cast<String>();
     assignedByAdmin = json['assignedByAdmin'];
     manualAssignment = json['manualAssignment'];
-    lastAgentMessageTime = json['lastAgentMessageTime'];
-    lastUserMessageTime = json['lastUserMessageTime'];
+    lastAgentMessageTime = json['lastAgentMessageTime'].toString();
+    lastUserMessageTime = json['lastUserMessageTime'].toString();
     replyCount = json['replyCount'];
     sId = json['_id'];
     ticketId = json['ticketId'];
@@ -115,13 +133,19 @@ class Ticket {
     assignedTo = json['assignedTo'];
     xmpp = json['xmpp'];
     assignedTime = json['assignedTime'];
-    logs = json['logs'].cast<String>();
-    reassignmentLog = json['reassignmentLog'].cast<String>();
+    logs = json['logs']?.cast<String>();
+    reassignmentLog = json['reassignmentLog']?.cast<String>();
     iV = json['__v'];
     firstResponseTime = json['firstResponseTime'];
-    updated = json['updated'];
+    updated = json['updated'].toString();
     priority = json['priority'];
     sessionId = json['sessionId'];
+    if (json['collaborators'] != null) {
+      collaborators = new List<Collaborators>();
+      json['collaborators'].forEach((v) {
+        collaborators.add(new Collaborators.fromJson(v));
+      });
+    }
     agentProfile = json['agentProfile'] != null
         ? new AgentProfile.fromJson(json['agentProfile'])
         : null;
@@ -177,6 +201,31 @@ class Ticket {
   }
 }
 
+class Collaborators {
+  String sId;
+  String username;
+  String xmppUsername;
+  String name;
+
+  Collaborators({this.sId, this.username, this.xmppUsername, this.name});
+
+  Collaborators.fromJson(Map<String, dynamic> json) {
+    sId = json['_id'];
+    username = json['username'];
+    xmppUsername = json['xmppUsername'];
+    name = json['name'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_id'] = this.sId;
+    data['username'] = this.username;
+    data['xmppUsername'] = this.xmppUsername;
+    data['name'] = this.name;
+    return data;
+  }
+}
+
 class Contact {
   String name;
   String email;
@@ -185,7 +234,7 @@ class Contact {
   Contact({this.name, this.email, this.phone});
 
   Contact.fromJson(Map<String, dynamic> json) {
-    name = json['name'];
+    name = json['name'].toString();
     email = json['email'];
     phone = json['phone'];
   }

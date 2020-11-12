@@ -38,6 +38,7 @@ class Message {
   String message;
   String messageType;
   String caption;
+  Map<String, dynamic> event;
   String sessionId;
   String slug;
   String feedback;
@@ -47,6 +48,8 @@ class Message {
   int iV;
   String agentId;
   String messageFormat;
+  String replyTo;
+  String sender;
 
   Message(
       {this.sId,
@@ -59,13 +62,16 @@ class Message {
       this.sessionId,
       this.slug,
       this.caption,
+      this.event,
       this.feedback,
       this.source,
       this.questionId,
       this.medium,
       this.iV,
       this.agentId,
-      this.messageFormat});
+      this.replyTo,
+      this.messageFormat,
+      this.sender});
 
   Message.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
@@ -85,6 +91,7 @@ class Message {
     questionId = json['questionId'];
     medium = json['medium'];
     iV = json['__v'];
+    replyTo = json['replyTo'];
     agentId = json['agentId'];
     if (message[0] == "{" && message[message.length - 1] == "}") {
       try {
@@ -92,14 +99,21 @@ class Message {
 
         messageFormat = currentMsg['message'] != null
             ? "text"
-            : currentMsg['image'] != null
-                ? "image"
-                : currentMsg['file'] != null ? "file" : "other";
+            : currentMsg['event'] != null
+                ? "event"
+                : currentMsg['image'] != null
+                    ? "image"
+                    : currentMsg['file'] != null
+                        ? "file"
+                        : currentMsg['video'] != null ? "video" : "other";
         caption = messageFormat == "image"
             ? currentMsg['options'] != null
                 ? currentMsg['options']["caption"]
                 : currentMsg['caption'] ?? null
             : null;
+        event = messageFormat == "event" ? currentMsg["event"] : null;
+        if (messageFormat == "event")
+          message = currentMsg["event"]["data"]["message"];
       } catch (e) {}
     } else {
       messageFormat = "text";

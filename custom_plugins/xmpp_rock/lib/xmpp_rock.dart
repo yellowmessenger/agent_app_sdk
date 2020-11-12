@@ -28,17 +28,17 @@ class XmppRock {
   }
 
   static void close() async {
-    final bool reply = await _methodChannel
-        .invokeMethod('closeConnection');
+    final reply = await _methodChannel.invokeMethod('closeConnection');
   }
 
-  static Future<dynamic> initialize (
-      {String fullJid, String password, int port})  async {
-      return  await _methodChannel.invokeMethod('initializeXMPP', <String, dynamic>{
-                'fullJid': fullJid,
-                'password': password,
-                'port': port,
-              });
+  static Future<dynamic> initialize(
+      {String fullJid, String password, int port}) async {
+    return await _methodChannel
+        .invokeMethod('initializeXMPP', <String, dynamic>{
+      'fullJid': fullJid,
+      'password': password,
+      'port': port,
+    });
   }
 
   static Stream<String> get xmppStream {
@@ -46,7 +46,7 @@ class XmppRock {
       _xmppStream = null;
     }
     _xmppStream =
-         _eventChannel.receiveBroadcastStream().map<String>((value) => value);
+        _eventChannel.receiveBroadcastStream().map<String>((value) => value);
 
     return _xmppStream;
   }

@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:support_agent/core/models/config.dart';
 import 'package:support_agent/core/services/authentication_service.dart';
 import 'package:support_agent/core/viewmodels/base_model.dart';
@@ -9,19 +13,43 @@ class LoginModel extends BaseModel {
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
   Configurations config = locator<Configurations>();
+  static const platform =
+  const MethodChannel('com.yellowmessenger.support_agent/data');
 
   String errorMessage;
 
   initLogin(BuildContext context) async {
+    await _getConfig();
     bool authResponse = await login();
     if (authResponse) {
       Navigator.pushNamedAndRemoveUntil(
           context, 'bot_selection', (Route<dynamic> route) => false);
     }
+    else{
+      debugPrint("Login unsuccessful. Closing Plugin");
+      await platform.invokeMethod("close-module");
+
+    }
+  }
+
+
+  _getConfig() async {
+    var data = await platform.invokeMethod("getConfig");
+
+    final jData = jsonDecode(data);
+    print(jData);
+      var username = jData['username'];
+      var password = jData['password'];
+      var botId = jData['botId'];
+
+    config
+        .setState({"username": username, "password": password, "botId": botId});
   }
 
   Future<bool> login() async {
     // change username and password
+
+    if(config.config["username"] != null && config.config["password"] != null){
     var success = await _authenticationService.login(
         config.config["username"], config.config["password"]);
     if (success["error"] == false) {
@@ -30,5 +58,7 @@ class LoginModel extends BaseModel {
       errorMessage = success['error'];
       return false;
     }
+    }
+    else return false;
   }
 }
