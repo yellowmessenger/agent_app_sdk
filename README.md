@@ -129,8 +129,8 @@ public class FlutterViewActivity extends FlutterActivity {
             JSONObject json = new JSONObject();
             try {
                 json.put("username", "Username");
-                json.put("password", "password");
-                json.put("botId", "botid");
+                json.put("password", "Password");
+                json.put("botId", "BotId");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
