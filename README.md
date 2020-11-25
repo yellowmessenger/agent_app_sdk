@@ -2,7 +2,7 @@
 
 ## Step 1
 Download and unzip the local maven repo from the following link.
-https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo.zip
+https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.0.zip
 
 ## Step 2 
 Consuming the Module  
@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                FlutterViewActivity.setTicketId("<Ticket-ID>"); // to open chat page directly set ticket id 
                 Intent flutterIntent;
                 flutterIntent = new Intent(MainActivity.this, FlutterViewActivity.class);
                 startActivity(flutterIntent);
@@ -103,37 +104,62 @@ import io.flutter.plugin.common.MethodChannel;
 
 public class FlutterViewActivity extends FlutterActivity {
     private static final String CHANNEL = "com.yellowmessenger.support_agent/data";
+    public static String ticketId;
+
     @Override
     public FlutterEngine provideFlutterEngine(Context context) {
         return FlutterEngineCache.getInstance().get("my_engine_id");
     }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
+
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
+
+
         super.configureFlutterEngine(flutterEngine);
+
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CHANNEL).setMethodCallHandler(
                 (call, result) -> {
                     if (call.method.equals("getConfig")) {
             JSONObject json = new JSONObject();
             try {
-                json.put("username", "username");
-                json.put("password", "password");
-                json.put("botId", "BOT-ID");
+                json.put("username", "priyank@yellowmessenger.com");
+                json.put("password", "P@$$9333172315");
+                json.put("botId", "x1553936559750");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
             result.success(json.toString());
-        }
+        } else if (call.method.equals("close-module")) {
+                        this.finish();
+                    }
+          else if (call.method.equals("getCurrentTicket")) {
+                        result.success(FlutterViewActivity.ticketId);
+                    }
+          else if (call.method.equals("setCurrentTicket")) {
+                        FlutterViewActivity.ticketId = null;
+                        result.success(true);
+                    }
         else {
             result.notImplemented();
         }
                 }
         );
     }
+
+    public static boolean setTicketId (String ticketId){
+        FlutterViewActivity.ticketId = ticketId;
+        return true;
+    }
+
+
 }
+
 ```
 
 ## Step 5
