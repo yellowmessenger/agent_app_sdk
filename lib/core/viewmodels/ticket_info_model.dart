@@ -99,7 +99,10 @@ class TicketInfoModel extends BaseModel {
           _customDataService.customData
               .containsKey(_botService.defaultBot.userName) &&
           _customDataService.customData[_botService.defaultBot.userName]
-              .containsKey(_ticket.ticketId)) {
+              .containsKey(_ticket.ticketId) &&
+          _customDataService.customData[_botService.defaultBot.userName]
+                  [_ticket.ticketId] !=
+              null) {
         customFieldValues = _customDataService
             .customData[_botService.defaultBot.userName][_ticket.ticketId];
       }
@@ -146,8 +149,15 @@ class TicketInfoModel extends BaseModel {
         customFieldValues
           ..removeWhere(
               (dynamic key, dynamic value) => key == null || value == null));
-
+    updateTicketData();
     return update;
+  }
+
+  updateTicketData() async {
+    setState(ViewState.Busy);
+    _ticket = await _api.getTicketInfo(_authService.currentUserData.accessToken,
+        currentTicket.ticketId, _botService.defaultBot.userName);
+    setState(ViewState.Idle);
   }
 
   updateContactData(String key, String value) {

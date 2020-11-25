@@ -62,7 +62,7 @@ class Settings {
   bool askAgentRating;
   String solved;
   String unsolved;
-  bool emailChatLogsToUser;
+  dynamic emailChatLogsToUser;
   TicketUpdateEventSettings ticketUpdateEventSettings;
   String sId;
   String createdDate;

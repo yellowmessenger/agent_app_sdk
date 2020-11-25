@@ -29,10 +29,11 @@ sendNotification(String title, String body, {String payload}) async {
       FlutterLocalNotificationsPlugin();
   var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'com.yellowmessenger.partner', 'Yellow Partner', 'Support agent app.',
-      importance: Importance.Max, priority: Priority.High, ticker: 'ticker');
+      importance: Importance.max, priority: Priority.high, ticker: 'ticker');
   var iOSPlatformChannelSpecifics = IOSNotificationDetails();
   var platformChannelSpecifics = NotificationDetails(
-      androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics);
   await flutterLocalNotificationsPlugin.show(
       0, title, body, platformChannelSpecifics);
   // .show(0, title, body, platformChannelSpecifics, payload: payload ?? "");

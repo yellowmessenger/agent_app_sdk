@@ -117,304 +117,282 @@ class ChatPage extends StatelessWidget {
                     child: Text(
                         "Please wait while we are loading conversations..."),
                   )
-                : model.messages.length == 0
-                    ? Center(
-                        child: Text("There was an error..."),
-                      )
-                    : Column(
-                        children: <Widget>[
-                          Expanded(
-                            flex: 5,
-                            child: GestureDetector(
-                              onTap: () => _focusNode.unfocus(),
-                              child: SingleChildScrollView(
-                                  reverse: true,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 15, vertical: 5),
-                                    child: Column(
-                                        children: MessageLayout(
-                                            model.messages,
-                                            MediaQuery.of(context).size.width,
-                                            model,
-                                            context)),
-                                  )),
-                            ),
-                          ),
-                          isArchive
-                              ? Container(
-                                  margin: EdgeInsets.all(20),
-                                  child: Row(
-                                    children: <Widget>[
-                                      Expanded(
-                                        child: Divider(),
-                                      ),
-                                      Text(
-                                        model.currentTicket.status == "RESOLVED"
-                                            ? "Ticket Ended"
-                                            : "Assigned to: ${model.agentProfile != null ? model.agentProfile.name : ''} ",
-                                        style: GoogleFonts.roboto(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: TextColorLight),
-                                      ),
-                                      Expanded(
-                                        child: Divider(),
-                                      ),
-                                    ],
+                // : model.messages.length == 0
+                //     ? Center(
+                //         child: Text("There was an error..."),
+                //       )
+                : Column(
+                    children: <Widget>[
+                      Expanded(
+                        flex: 5,
+                        child: GestureDetector(
+                          onTap: () => _focusNode.unfocus(),
+                          child: SingleChildScrollView(
+                              reverse: true,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 15, vertical: 5),
+                                child: Column(
+                                    children: MessageLayout(
+                                        model.messages,
+                                        MediaQuery.of(context).size.width,
+                                        model,
+                                        context)),
+                              )),
+                        ),
+                      ),
+                      isArchive
+                          ? Container(
+                              margin: EdgeInsets.all(20),
+                              child: Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Divider(),
                                   ),
-                                )
-                              : Expanded(
-                                  flex: 1,
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(top: 5),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 4, horizontal: 12),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: <Widget>[
-                                          IconButton(
-                                              icon: Icon(Icons.add),
-                                              color: AccentBlue,
-                                              onPressed: () {
-                                                containerForSheet<String>(
-                                                  context: context,
-                                                  child: CupertinoActionSheet(
-                                                    title:
-                                                        Text("Add attachment"),
-                                                    actions: <Widget>[
-                                                      CupertinoActionSheetAction(
-                                                        onPressed: () async {
-                                                          var imgFile = await ImagePicker
-                                                                  .pickImage(
-                                                                      source: ImageSource
+                                  Text(
+                                    model.currentTicket.status == "RESOLVED"
+                                        ? "Ticket Ended"
+                                        : "Assigned to: ${model.agentProfile != null ? model.agentProfile.name : ''} ",
+                                    style: GoogleFonts.roboto(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: TextColorLight),
+                                  ),
+                                  Expanded(
+                                    child: Divider(),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Expanded(
+                              flex: 1,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 5),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 4, horizontal: 12),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: <Widget>[
+                                      IconButton(
+                                          icon: Icon(Icons.add),
+                                          color: AccentBlue,
+                                          onPressed: () {
+                                            containerForSheet<String>(
+                                              context: context,
+                                              child: CupertinoActionSheet(
+                                                title: Text("Add attachment"),
+                                                actions: <Widget>[
+                                                  CupertinoActionSheetAction(
+                                                    onPressed: () async {
+                                                      var imgFile = await ImagePicker
+                                                              .pickImage(
+                                                                  source:
+                                                                      ImageSource
                                                                           .camera)
-                                                              .catchError(
-                                                                  (err) =>
-                                                                      print(
-                                                                          err));
-                                                          Navigator.of(context)
-                                                              .pop();
-                                                          await model
-                                                              .uploadImage(
-                                                                  imgFile.path,
-                                                                  context);
-                                                        },
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .start,
-                                                          children: <Widget>[
-                                                            Icon(
-                                                              Icons.camera_alt,
-                                                              size: 24,
-                                                              color: AccentBlue,
-                                                            ),
-                                                            SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            Text(
-                                                              "Camera",
-                                                              style: GoogleFonts
-                                                                  .roboto(
-                                                                      fontSize:
-                                                                          20,
-                                                                      color:
-                                                                          AccentBlue),
-                                                            ),
-                                                          ],
+                                                          .catchError((err) =>
+                                                              print(err));
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      await model.uploadImage(
+                                                          imgFile.path,
+                                                          context);
+                                                    },
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .start,
+                                                      children: <Widget>[
+                                                        Icon(
+                                                          Icons.camera_alt,
+                                                          size: 24,
+                                                          color: AccentBlue,
                                                         ),
-                                                      ),
-                                                      CupertinoActionSheetAction(
-                                                        onPressed: () async {
-                                                          var imgFile = await ImagePicker
-                                                                  .pickImage(
-                                                                      source: ImageSource
-                                                                          .gallery)
-                                                              .catchError(
-                                                                  (err) =>
-                                                                      print(
-                                                                          err));
-                                                          Navigator.of(context)
-                                                              .pop();
-                                                          await model
-                                                              .uploadImage(
-                                                                  imgFile.path,
-                                                                  context);
-                                                        },
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .start,
-                                                          children: <Widget>[
-                                                            Icon(
-                                                              Icons.image,
-                                                              size: 24,
-                                                              color: AccentBlue,
-                                                            ),
-                                                            SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            Text(
-                                                              "Photo & Video Library",
-                                                              style: GoogleFonts
-                                                                  .roboto(
-                                                                      fontSize:
-                                                                          20,
-                                                                      color:
-                                                                          AccentBlue),
-                                                            ),
-                                                          ],
+                                                        SizedBox(
+                                                          width: 20,
                                                         ),
-                                                      ),
-                                                      CupertinoActionSheetAction(
-                                                        onPressed: () async {
-                                                          FilePickerResult
-                                                              result =
-                                                              await FilePicker
-                                                                  .platform
-                                                                  .pickFiles();
-
-                                                          if (result != null) {
-                                                            File file = File(
-                                                                result
-                                                                    .files
-                                                                    .single
-                                                                    .path);
-                                                            await model
-                                                                .uploadFile(
-                                                                    file.path,
-                                                                    context);
-                                                          }
-
-                                                          Navigator.of(context)
-                                                              .pop();
-                                                        },
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .start,
-                                                          children: <Widget>[
-                                                            Icon(
-                                                              Icons.description,
-                                                              size: 24,
-                                                              color: AccentBlue,
-                                                            ),
-                                                            SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            Text(
-                                                              "Document",
-                                                              style: GoogleFonts
-                                                                  .roboto(
-                                                                      fontSize:
-                                                                          20,
-                                                                      color:
-                                                                          AccentBlue),
-                                                            ),
-                                                          ],
+                                                        Text(
+                                                          "Camera",
+                                                          style: GoogleFonts
+                                                              .roboto(
+                                                                  fontSize: 20,
+                                                                  color:
+                                                                      AccentBlue),
                                                         ),
-                                                      ),
-                                                    ],
-                                                    cancelButton:
-                                                        CupertinoActionSheetAction(
-                                                      child:
-                                                          const Text('Cancel'),
-                                                      isDefaultAction: true,
-                                                      onPressed: () {
-                                                        Navigator.pop(
-                                                            context, 'Cancel');
-                                                      },
+                                                      ],
                                                     ),
                                                   ),
-                                                );
-                                              }),
-                                          Expanded(
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 16),
-                                              child: TextField(
-                                                  onTap: () {
-                                                    if (model
-                                                            .chatMessageController
-                                                            .text
-                                                            .contains('\n') ||
-                                                        model.chatMessageController
-                                                                .text.length >
-                                                            16) {
-                                                      _expandTypingArea(
-                                                          model, context);
-                                                    }
-                                                  },
-                                                  controller: model
-                                                      .chatMessageController,
-                                                  focusNode: _focusNode,
-                                                  maxLines: 2,
-                                                  // textInputAction:
-                                                  //     TextInputAction.done,
-                                                  decoration: InputDecoration(
-                                                    hintText:
-                                                        "Type your message...",
-                                                    hintStyle:
-                                                        GoogleFonts.roboto(
-                                                            color: Colors.black
-                                                                .withAlpha(120),
-                                                            fontSize: 14),
+                                                  CupertinoActionSheetAction(
+                                                    onPressed: () async {
+                                                      var imgFile = await ImagePicker
+                                                              .pickImage(
+                                                                  source:
+                                                                      ImageSource
+                                                                          .gallery)
+                                                          .catchError((err) =>
+                                                              print(err));
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      await model.uploadImage(
+                                                          imgFile.path,
+                                                          context);
+                                                    },
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .start,
+                                                      children: <Widget>[
+                                                        Icon(
+                                                          Icons.image,
+                                                          size: 24,
+                                                          color: AccentBlue,
+                                                        ),
+                                                        SizedBox(
+                                                          width: 20,
+                                                        ),
+                                                        Text(
+                                                          "Photo & Video Library",
+                                                          style: GoogleFonts
+                                                              .roboto(
+                                                                  fontSize: 20,
+                                                                  color:
+                                                                      AccentBlue),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
-                                                  onChanged: (text) {
-                                                    // print(text.length);
-                                                    if (text.length == 0) {
-                                                      model
-                                                          .deleteActionMessage();
-                                                    } else if (text
-                                                            .contains('\n') ||
-                                                        text.length > 16) {
-                                                      _expandTypingArea(
-                                                          model, context);
-                                                    }
+                                                  CupertinoActionSheetAction(
+                                                    onPressed: () async {
+                                                      FilePickerResult result =
+                                                          await FilePicker
+                                                              .platform
+                                                              .pickFiles();
 
-                                                    if (text[0] == "#") {
-                                                      _openCannedResponses(
-                                                          context, model);
-                                                    } else if (text[0] == "/") {
-                                                      _openActionResponses(
-                                                          context, model);
-                                                    } else if (!model
-                                                        .actionPending)
-                                                      model.sendMessage(
-                                                          msg: text,
-                                                          typing: true);
-                                                  }),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            iconSize: 28,
-                                            onPressed: () {
-                                              model.sendMessage(
-                                                  msg: model
-                                                          .chatMessageController
-                                                          .text ??
-                                                      "");
-                                              if (model.actionPending)
-                                                model.showActionPrompt(context);
-                                            },
-                                            icon: Icon(
-                                              Icons.send,
-                                              color: AccentBlue,
-                                            ),
-                                          )
-                                        ],
+                                                      if (result != null) {
+                                                        File file = File(result
+                                                            .files.single.path);
+                                                        await model.uploadFile(
+                                                            file.path, context);
+                                                      }
+
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .start,
+                                                      children: <Widget>[
+                                                        Icon(
+                                                          Icons.description,
+                                                          size: 24,
+                                                          color: AccentBlue,
+                                                        ),
+                                                        SizedBox(
+                                                          width: 20,
+                                                        ),
+                                                        Text(
+                                                          "Document",
+                                                          style: GoogleFonts
+                                                              .roboto(
+                                                                  fontSize: 20,
+                                                                  color:
+                                                                      AccentBlue),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                                cancelButton:
+                                                    CupertinoActionSheetAction(
+                                                  child: const Text('Cancel'),
+                                                  isDefaultAction: true,
+                                                  onPressed: () {
+                                                    Navigator.pop(
+                                                        context, 'Cancel');
+                                                  },
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16),
+                                          child: TextField(
+                                              onTap: () {
+                                                if (model.chatMessageController
+                                                        .text
+                                                        .contains('\n') ||
+                                                    model.chatMessageController
+                                                            .text.length >
+                                                        16) {
+                                                  _expandTypingArea(
+                                                      model, context);
+                                                }
+                                              },
+                                              controller:
+                                                  model.chatMessageController,
+                                              focusNode: _focusNode,
+                                              maxLines: 2,
+                                              // textInputAction:
+                                              //     TextInputAction.done,
+                                              decoration: InputDecoration(
+                                                hintText:
+                                                    "Type your message...",
+                                                hintStyle: GoogleFonts.roboto(
+                                                    color: Colors.black
+                                                        .withAlpha(120),
+                                                    fontSize: 14),
+                                              ),
+                                              onChanged: (text) {
+                                                // print(text.length);
+                                                if (text.length == 0) {
+                                                  model.deleteActionMessage();
+                                                } else if (text
+                                                        .contains('\n') ||
+                                                    text.length > 16) {
+                                                  _expandTypingArea(
+                                                      model, context);
+                                                }
+
+                                                if (text[0] == "#") {
+                                                  _openCannedResponses(
+                                                      context, model);
+                                                } else if (text[0] == "/") {
+                                                  _openActionResponses(
+                                                      context, model);
+                                                } else if (!model.actionPending)
+                                                  model.sendMessage(
+                                                      msg: text, typing: true);
+                                              }),
+                                        ),
                                       ),
-                                    ),
+                                      IconButton(
+                                        iconSize: 28,
+                                        onPressed: () {
+                                          model.sendMessage(
+                                              msg: model.chatMessageController
+                                                      .text ??
+                                                  "");
+                                          if (model.actionPending)
+                                            model.showActionPrompt(context);
+                                        },
+                                        icon: Icon(
+                                          Icons.send,
+                                          color: AccentBlue,
+                                        ),
+                                      )
+                                    ],
                                   ),
-                                )
-                        ],
-                      )));
+                                ),
+                              ),
+                            )
+                    ],
+                  )));
   }
 
   void containerForSheet<T>({BuildContext context, Widget child}) {
@@ -526,11 +504,12 @@ class ChatPage extends StatelessWidget {
                                             null &&
                                         model.chatMessageController.text
                                                 .length >
-                                            0)
+                                            0) {
                                       model.sendMessage(
                                           msg: model
                                                   .chatMessageController.text ??
                                               "");
+                                    }
                                     if (model.actionPending)
                                       model.showActionPrompt(context);
 

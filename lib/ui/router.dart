@@ -8,6 +8,7 @@ import 'package:support_agent/ui/views/chatpage.dart';
 import 'package:support_agent/ui/views/home.dart';
 import 'package:support_agent/ui/views/landing.dart';
 import 'package:support_agent/ui/views/login.dart';
+import 'package:support_agent/ui/views/redirect.dart';
 import 'package:support_agent/ui/views/ticket_info.dart';
 import 'package:support_agent/ui/views/transfer_ticket.dart';
 
@@ -17,24 +18,32 @@ class Router {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
-        return MaterialPageRoute(
-            builder: (_) => LandingPage());
+        return MaterialPageRoute(builder: (_) => LandingPage());
       case 'home':
-        return MaterialPageRoute(
-            builder: (_) => HomePage());
+        return MaterialPageRoute(builder: (_) => HomePage());
       case 'login':
         return MaterialPageRoute(builder: (_) => LoginView());
-       case 'bot_selection':
+      case 'bot_selection':
         return MaterialPageRoute(builder: (_) => BotSelectionPage());
-       case 'agents':
+      case 'agents':
         return MaterialPageRoute(builder: (_) => AgentsView());
-       case 'transfer':
-        return MaterialPageRoute(builder: (_) => TransferTicket(ticket: settings.arguments,));
-        case 'chat_page':
+      case 'transfer':
+        return MaterialPageRoute(
+            builder: (_) => TransferTicket(
+                  ticket: settings.arguments,
+                ));
+      case 'chat_page':
         final ChatScreenArguments args = settings.arguments;
-        return MaterialPageRoute(builder: (_) => ChatPage(ticket: args.ticket, isArchive: args.isArchive,));
-        case 'ticket_info':
-        return MaterialPageRoute(builder: (_) => TicketInfo(ticket: settings.arguments));
+        return MaterialPageRoute(
+            builder: (_) => ChatPage(
+                  ticket: args.ticket,
+                  isArchive: args.isArchive,
+                ));
+      case 'ticket_info':
+        return MaterialPageRoute(
+            builder: (_) => TicketInfo(ticket: settings.arguments));
+      case 'ticket/':
+        return MaterialPageRoute(builder: (_) => Redirect());
       default:
         return MaterialPageRoute(
             builder: (_) => Scaffold(
@@ -53,7 +62,9 @@ class Router {
                       FlatButton.icon(
                         color: AccentBlue,
                         textColor: Colors.white,
-                        onPressed: () => Navigator.canPop(_) ? Navigator.pop(_) : Navigator.pushReplacementNamed(_, '/'),
+                        onPressed: () => Navigator.canPop(_)
+                            ? Navigator.pop(_)
+                            : Navigator.pushReplacementNamed(_, '/'),
                         label: Text(
                           "Home",
                           style: TextStyle(fontSize: 18),
@@ -66,4 +77,3 @@ class Router {
     }
   }
 }
-

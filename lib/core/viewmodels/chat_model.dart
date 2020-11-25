@@ -62,6 +62,7 @@ class ChatModel extends BaseModel {
   ActionResponses selectedAction;
   Map actionParms = Map();
   List<CollaboratorProfile> collaborators = List<CollaboratorProfile>();
+  List<String> sentMessageIds = List<String>();
 
   Future initChat(Ticket ticket, BuildContext context) async {
     setState(ViewState.Busy);
@@ -148,7 +149,7 @@ class ChatModel extends BaseModel {
         _authService.currentUserData.accessToken,
         _botService.defaultBot.userName,
         data);
-
+    print(actionSent);
     setState(ViewState.Busy);
     if (actionSent['data'] != null &&
         actionSent['data']['messageArray'] != null)
@@ -159,6 +160,9 @@ class ChatModel extends BaseModel {
           messageType: "AGENT",
           messageFormat: "unsent",
           created: DateTime.now()));
+
+    _ticket = await _api.getTicketInfo(_authService.currentUserData.accessToken,
+        _ticket.ticketId, _botService.defaultBot.userName);
     setState(ViewState.Idle);
   }
 
@@ -290,6 +294,7 @@ class ChatModel extends BaseModel {
   }
 
   _updateMessageList(String data) {
+    print(data);
     MessageFormat incoming;
     if (data != "Stream Connected")
       try {
@@ -303,19 +308,69 @@ class ChatModel extends BaseModel {
               // && _messages[_messages.length - 1].message !=
               //     incoming.data['message']
               ) {
-            _messages.add(Message(
-                sender: incoming.agentId,
-                message: incoming.data['message'],
-                messageType: incoming.messageType,
-                messageFormat: "text",
-                replyTo: incoming.data['replyTo'] ?? null));
+            if (incoming.agentId != null &&
+                incoming.agentId == _authService.currentUserData.user.email &&
+                !sentMessageIds.contains(incoming.data["_id"])) {
+              sentMessageIds.add(incoming.data["_id"]);
+              _messages.add(Message(
+                  sender: incoming.agentId,
+                  message: incoming.data['message'],
+                  messageType: incoming.messageType,
+                  messageFormat: "text",
+                  replyTo: incoming.data['replyTo'] ?? null));
+            } else if (incoming.agentId == null ||
+                incoming.agentId != _authService.currentUserData.user.email) {
+              _messages.add(Message(
+                  sender: incoming.agentId,
+                  message: incoming.data['message'],
+                  messageType: incoming.messageType,
+                  messageFormat: "text",
+                  replyTo: incoming.data['replyTo'] ?? null));
+            }
           } else if (incoming.data["event"] != null) {
             //to set events
-            _messages.add(Message(
-                message: incoming.data["event"]["data"]["message"],
-                messageType: incoming.messageType ?? "BOT",
-                messageFormat: "event",
-                replyTo: null));
+            if (incoming.data["event"]["code"] == "bot-message-notification") {
+              if (incoming.data["event"]["data"]["message"] != null) {
+                _messages.add(Message(
+                    message: incoming.data["event"]["data"]["message"],
+                    messageType: incoming.messageType ?? "BOT",
+                    messageFormat: "text",
+                    replyTo: null));
+              } else if (incoming.data["event"]['data']['image'] != null) {
+                _messages.add(Message(
+                    sender: incoming.agentId,
+                    message: incoming.data["event"]['data']['image'],
+                    messageType: incoming.messageType,
+                    messageFormat: "image",
+                    caption: incoming.data["event"]['data']['options'] != null
+                        ? incoming.data["event"]['data']['options']["caption"]
+                        : incoming.data["event"]['data']['caption'] ?? null,
+                    replyTo: incoming.data['replyTo'] ?? null));
+              } else if (incoming.data["event"]['data']['file'] != null) {
+                _messages.add(Message(
+                    sender: incoming.agentId,
+                    message: incoming.data["event"]['data']['file'],
+                    messageType: incoming.messageType,
+                    messageFormat: "file",
+                    replyTo: incoming.data['replyTo'] ?? null));
+              } else if (incoming.data["event"]['data']['video'] != null) {
+                _messages.add(Message(
+                    sender: incoming.agentId,
+                    message: incoming.data["event"]['data']['video'],
+                    messageType: incoming.messageType,
+                    messageFormat: "video",
+                    caption: incoming.data["event"]['data']['options'] != null
+                        ? incoming.data["event"]['data']['options']["caption"]
+                        : incoming.data["event"]['data']['caption'] ?? null,
+                    replyTo: incoming.data['replyTo'] ?? null));
+              }
+            } else {
+              _messages.add(Message(
+                  message: incoming.data["event"]["data"]["message"],
+                  messageType: incoming.messageType ?? "BOT",
+                  messageFormat: "event",
+                  replyTo: null));
+            }
           } else if (incoming.data['image'] != null) {
             _messages.add(Message(
                 sender: incoming.agentId,
@@ -391,16 +446,27 @@ class ChatModel extends BaseModel {
       myMessage.message = message;
       myMessage.type = type;
       if (type == "object" || msg != "") {
-        await _api.sendMessage(_authService.currentUserData.accessToken,
-            _botService.defaultBot.userName, myMessage);
-        if (typing == null) {
+        var messageResponse = await _api.sendMessage(
+            _authService.currentUserData.accessToken,
+            _botService.defaultBot.userName,
+            myMessage);
+        print("priyank: " + messageResponse.toString());
+        if (typing == null &&
+            messageResponse != null &&
+            messageResponse["success"]) {
           setState(ViewState.Busy);
           chatMessageController.clear();
-          _messages.add(Message(
-              message: msg,
-              messageType: "AGENT",
-              messageFormat: "text",
-              created: DateTime.now()));
+          var messageId = messageResponse["data"]["_id"];
+          print(messageId);
+          if (!sentMessageIds.contains(messageId)) {
+            sentMessageIds.add(messageId);
+            _messages.add(Message(
+                sender: _authService.currentUserData.user.email,
+                message: msg,
+                messageType: "AGENT",
+                messageFormat: "text",
+                created: DateTime.now()));
+          }
           setState(ViewState.Idle);
         }
       }
@@ -426,9 +492,12 @@ class ChatModel extends BaseModel {
         String botId = _botService.defaultBot.userName;
         String ticketId = _ticket.ticketId;
 
-        _api
-            .closeTicket(authKey, botId, ticketId)
-            .then((value) => Navigator.pop(context, 1));
+        _api.closeTicket(authKey, botId, ticketId).then((value) {
+          _customDataService.setDefault({
+            botId: {ticketId: null}
+          });
+          Navigator.pop(context, 1);
+        });
       });
     } else {
       await _customDataService.getCustomData();
@@ -598,7 +667,6 @@ class ChatModel extends BaseModel {
         _authService.currentUserData.accessToken,
         _botService.defaultBot.userName,
         myMessage);
-    // print(response);
     setState(ViewState.Busy);
     _messages.add(Message(
         message: res,

@@ -1,4 +1,5 @@
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -421,13 +422,24 @@ class ShowCustomFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<Widget> customFields = List<Widget>();
-    int i = 0;
-    model.customFields.fields.forEach((key, value) {
-      i++;
 
+    model.customFields.fields.forEach((key, value) {
       customFields.add(
         InfoData(capitalize(value.name),
-            action: i % 3 == 0
+            action: ((model.customFieldValues[key] !=
+                            model.currentTicket.customFieldsValues
+                                .fields[key]) &&
+                        !(model.customFieldValues[key] is List<dynamic> &&
+                            listEquals(
+                                model.currentTicket.customFieldsValues
+                                    .fields[key],
+                                model.customFieldValues[key]))) &&
+                    !(model.currentTicket.customFieldsValues.fields[key] ==
+                            null &&
+                        (model.customFieldValues[key] == "" ||
+                            (model.customFieldValues[key] is List<dynamic> &&
+                                model.customFieldValues[key].length == 0) ||
+                            model.customFieldValues[key] == null))
                 ? Container(
                     child: Icon(
                       Icons.backup,

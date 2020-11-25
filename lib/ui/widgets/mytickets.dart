@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:support_agent/core/enums/viewstate.dart';
 import 'package:support_agent/core/models/chat_args.dart';
@@ -16,6 +17,30 @@ class MyTicketsPage extends StatefulWidget {
 }
 
 class _MyTicketsPageState extends State<MyTicketsPage> {
+  static const platform =
+      const MethodChannel('com.yellowmessenger.support_agent/data');
+
+  getTicketId(MyTicketsModel model, BuildContext context) async {
+    String data = await platform.invokeMethod("getCurrentTicket");
+    if (data != null) {
+      bool ticketPresent = false;
+      Ticket toJump;
+      for (var element in model.tickets) {
+        if (element.ticketId == data) {
+          ticketPresent = true;
+          toJump = element;
+          break;
+        }
+      }
+      if (ticketPresent) {
+        model.setTicketId(data);
+        bool result = await platform.invokeMethod("setCurrentTicket");
+
+        _navigateAndDisplaySelection(context, toJump, model);
+      }
+    }
+  }
+
   _navigateAndDisplaySelection(
       BuildContext context, Ticket ticket, MyTicketsModel model) async {
     // Navigator.push returns a Future that completes after calling
@@ -30,99 +55,105 @@ class _MyTicketsPageState extends State<MyTicketsPage> {
   Widget build(BuildContext context) {
     return BaseView<MyTicketsModel>(
         onModelReady: (model) async => await model.initMyTickets(),
-        builder: (context, model, child) => SliverList(
-            delegate: model.state == ViewState.Busy
-                ? SliverChildListDelegate([LoadingContent()])
-                : model.tickets.length == 0
-                    ? SliverChildListDelegate([NoData()])
-                    : SliverChildBuilderDelegate(
-                        (BuildContext context, int itemIndex) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              ListTile(
-                                title: !model.tickets[itemIndex].responded
-                                    ? Padding(
-                                        padding: const EdgeInsets.only(left: 0),
-                                        child: Row(
-                                          children: <Widget>[
-                                            Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: Container(
-                                                height: 10,
-                                                width: 10,
-                                                decoration: BoxDecoration(
-                                                    color: AccentBlue,
-                                                    shape: BoxShape.circle),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  left: 8),
-                                              child: Text(
-                                                  model.tickets[itemIndex]
-                                                          .contact.name ??
-                                                      "",
-                                                  style: GoogleFonts.roboto(
-                                                      fontSize: 15,
+        builder: (context, model, child) {
+          getTicketId(model, context);
+          return SliverList(
+              delegate: model.state == ViewState.Busy
+                  ? SliverChildListDelegate([LoadingContent()])
+                  : model.tickets.length == 0
+                      ? SliverChildListDelegate([NoData()])
+                      : SliverChildBuilderDelegate(
+                          (BuildContext context, int itemIndex) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                ListTile(
+                                  title: !model.tickets[itemIndex].responded
+                                      ? Padding(
+                                          padding:
+                                              const EdgeInsets.only(left: 0),
+                                          child: Row(
+                                            children: <Widget>[
+                                              Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Container(
+                                                  height: 10,
+                                                  width: 10,
+                                                  decoration: BoxDecoration(
                                                       color: AccentBlue,
-                                                      fontWeight:
-                                                          FontWeight.w500)),
-                                            )
-                                          ],
+                                                      shape: BoxShape.circle),
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 8),
+                                                child: Text(
+                                                    model.tickets[itemIndex]
+                                                            .contact.name ??
+                                                        "",
+                                                    style: GoogleFonts.roboto(
+                                                        fontSize: 15,
+                                                        color: AccentBlue,
+                                                        fontWeight:
+                                                            FontWeight.w500)),
+                                              )
+                                            ],
+                                          ),
+                                        )
+                                      : Padding(
+                                          padding:
+                                              const EdgeInsets.only(left: 16),
+                                          child: Text(
+                                              model.tickets[itemIndex].contact
+                                                  .name,
+                                              style: GoogleFonts.roboto(
+                                                  fontSize: 15,
+                                                  color: TextColorMedium,
+                                                  fontWeight: FontWeight.w500)),
                                         ),
-                                      )
-                                    : Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 16),
-                                        child: Text(
-                                            model.tickets[itemIndex].contact
-                                                .name,
-                                            style: GoogleFonts.roboto(
-                                                fontSize: 15,
-                                                color: TextColorMedium,
-                                                fontWeight: FontWeight.w500)),
-                                      ),
-                                subtitle: Padding(
-                                  padding: !model.tickets[itemIndex].responded
-                                      ? const EdgeInsets.only(left: 18)
-                                      : const EdgeInsets.only(left: 16),
-                                  child: Text(
-                                      model.tickets[itemIndex].issue ?? "",
+                                  subtitle: Padding(
+                                    padding: !model.tickets[itemIndex].responded
+                                        ? const EdgeInsets.only(left: 18)
+                                        : const EdgeInsets.only(left: 16),
+                                    child: Text(
+                                        model.tickets[itemIndex].issue ?? "",
+                                        style: GoogleFonts.roboto(
+                                            fontSize: 14,
+                                            color: TextColorLight)),
+                                  ),
+                                  trailing: Text(
+                                      timeago.format(DateTime.parse(model
+                                                  .tickets[itemIndex].updated ??
+                                              model.tickets[itemIndex]
+                                                  .timestamp)) ??
+                                          "",
                                       style: GoogleFonts.roboto(
-                                          fontSize: 14, color: TextColorLight)),
+                                          fontSize: 12,
+                                          color: !model
+                                                  .tickets[itemIndex].responded
+                                              ? AccentBlue
+                                              : TextColorLight)),
+                                  onTap: () {
+                                    model.setTicketId(
+                                        model.tickets[itemIndex].ticketId);
+                                    _navigateAndDisplaySelection(context,
+                                        model.tickets[itemIndex], model);
+                                  },
                                 ),
-                                trailing: Text(
-                                    timeago.format(DateTime.parse(
-                                            model.tickets[itemIndex].updated ??
-                                                model.tickets[itemIndex]
-                                                    .timestamp)) ??
-                                        "",
-                                    style: GoogleFonts.roboto(
-                                        fontSize: 12,
-                                        color:
-                                            !model.tickets[itemIndex].responded
-                                                ? AccentBlue
-                                                : TextColorLight)),
-                                onTap: () {
-                                  model.setTicketId(
-                                      model.tickets[itemIndex].ticketId);
-                                  _navigateAndDisplaySelection(
-                                      context, model.tickets[itemIndex], model);
-                                },
-                              ),
-                              Divider()
-                            ],
-                          );
-                        },
-                        semanticIndexCallback: (Widget widget, int localIndex) {
-                          if (localIndex.isEven) {
-                            return localIndex ~/ 2;
-                          }
-                          return null;
-                        },
-                        childCount: model.tickets.length,
-                        addSemanticIndexes: true,
-                      )));
+                                Divider()
+                              ],
+                            );
+                          },
+                          semanticIndexCallback:
+                              (Widget widget, int localIndex) {
+                            if (localIndex.isEven) {
+                              return localIndex ~/ 2;
+                            }
+                            return null;
+                          },
+                          childCount: model.tickets.length,
+                          addSemanticIndexes: true,
+                        ));
+        });
   }
 }
