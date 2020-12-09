@@ -177,7 +177,34 @@ class HomePage extends StatelessWidget {
                                                           Text("Sign Off"),
                                                         ],
                                                       ),
+                                                    ),    CupertinoActionSheetAction(
+                                                      onPressed: () {
+
+
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                        model.showAlertDialog(context);
+                                                      },
+                                                      child: Row(
+                                                        children: <Widget>[
+                                                          Container(
+                                                            height: 10,
+                                                            width: 10,
+                                                            margin: EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        20),
+                                                            decoration: BoxDecoration(
+                                                                color:
+                                                                    TextColorMedium,
+                                                                shape: BoxShape
+                                                                    .circle),
+                                                          ),
+                                                          Text("App Availability: ${model.offlineTicketAllowed != null ? model.offlineTicketAllowed ? 'On' : 'Off' : 'Off'}"),
+                                                        ],
+                                                      ),
                                                     ),
+
                                                   ],
                                                   cancelButton:
                                                       CupertinoActionSheetAction(

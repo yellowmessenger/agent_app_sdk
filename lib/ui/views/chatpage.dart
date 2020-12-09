@@ -47,13 +47,14 @@ class ChatPage extends StatelessWidget {
                 title: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    model.currentTicket.contact.name != null
-                        ? CircleAvatar(
-                            child: Text(
-                                getInitials(model.currentTicket.contact.name)),
-                            backgroundColor: Colors.white,
-                          )
-                        : SizedBox.shrink(),
+//                    model.currentTicket.contact.name != null
+//                        ? CircleAvatar(
+//                            child: Text(
+//                                getInitials(model.currentTicket.contact.name)),
+//                            backgroundColor: Colors.white,
+//                          )
+//                        :
+                    SizedBox.shrink(),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Column(

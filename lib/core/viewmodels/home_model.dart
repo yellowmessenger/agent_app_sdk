@@ -41,6 +41,7 @@ class HomeModel extends BaseModel {
   BuildContext ctx;
   bool _xmppReady = false;
   bool get xmppReady => _xmppReady;
+  bool  offlineTicketAllowed;
   set xmppReady(bool status) {
     _xmppReady = status;
   }
@@ -270,6 +271,10 @@ class HomeModel extends BaseModel {
 
     bool allowOfflineTicket =
         allKeys.contains('allowOfflineTicket') ? true : false;
+
+    setState(ViewState.Busy);
+    offlineTicketAllowed = allowOfflineTicket;
+    setState(ViewState.Idle);
 
     return allowOfflineTicket;
   }

@@ -1,4 +1,4 @@
-package com.yellowmessenger.xmpp_rock;
+package com.rara.xmpp_rock;
 
 import android.annotation.TargetApi;
 import android.content.Context;

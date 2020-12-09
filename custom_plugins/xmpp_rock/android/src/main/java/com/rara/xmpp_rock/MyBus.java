@@ -1,4 +1,4 @@
-package com.yellowmessenger.xmpp_rock;
+package com.rara.xmpp_rock;
 
 public class MyBus {
 
