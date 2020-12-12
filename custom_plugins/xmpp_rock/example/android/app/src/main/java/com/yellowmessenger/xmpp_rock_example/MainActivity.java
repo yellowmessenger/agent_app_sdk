@@ -1,4 +1,4 @@
-package com.rara.xmpp_rock_example;
+package com.yellowmessenger.xmpp_rock_example;
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity;

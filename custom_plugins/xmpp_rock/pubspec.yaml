@@ -1,8 +1,6 @@
 name: xmpp_rock
 description: XMPP agent for flutter apps.
 version: 0.0.1
-author:
-homepage:
 
 environment:
   sdk: ">=2.1.0 <3.0.0"

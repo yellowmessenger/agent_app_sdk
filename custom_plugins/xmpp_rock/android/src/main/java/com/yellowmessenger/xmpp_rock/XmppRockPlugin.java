@@ -1,12 +1,14 @@
-package com.rara.xmpp_rock;
+package com.yellowmessenger.xmpp_rock;
 
 import android.content.Context;
+import android.os.Handler;
 
 import androidx.annotation.NonNull;
 
 import org.jxmpp.stringprep.XmppStringprepException;
 
 import io.flutter.Log;
+import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
@@ -60,6 +62,10 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
         } else  if (call.method.equals("closeConnection")) {
             result.success(closeConnetion());
 
+        }
+
+        else  if (call.method.equals("start-chatbot")) {
+            // result.success(closeConnetion());
         }
         else {
 
