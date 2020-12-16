@@ -41,7 +41,7 @@ class HomeModel extends BaseModel {
   BuildContext ctx;
   bool _xmppReady = false;
   bool get xmppReady => _xmppReady;
-  bool  offlineTicketAllowed;
+  bool offlineTicketAllowed;
   set xmppReady(bool status) {
     _xmppReady = status;
   }
@@ -131,9 +131,10 @@ class HomeModel extends BaseModel {
     isOffline = !hasConnection;
     if (isOffline) {
       xmppReady = !isOffline;
-    } else {
       _xmppService.closeCurrentConnection();
-      _xmppConnection();
+      // if (!_xmppService.chatStreamSubscription.isPaused) _xmppConnection();
+    } else {
+      goOnline();
     }
 
     setState(ViewState.Idle);
@@ -372,6 +373,10 @@ class HomeModel extends BaseModel {
 
   void goOnline() {
     if (_xmppService.chatStreamSubscription.isPaused) _xmppConnection();
+  }
+
+  void retryConnection() {
+    _xmppConnection();
   }
 
   dispose() {}

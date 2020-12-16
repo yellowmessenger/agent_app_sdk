@@ -47,35 +47,39 @@ class ChatPage extends StatelessWidget {
                 title: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-//                    model.currentTicket.contact.name != null
-//                        ? CircleAvatar(
-//                            child: Text(
-//                                getInitials(model.currentTicket.contact.name)),
-//                            backgroundColor: Colors.white,
-//                          )
-//                        :
-                    SizedBox.shrink(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Text(model.currentTicket.contact.name != null &&
-                                  model.currentTicket.contact.name != ""
-                              ? model.currentTicket.contact.name
-                              : model.currentTicket.uid),
-                          Text(
-                            isArchive
-                                ? model.currentTicket.status == "RESOLVED"
-                                    ? "This ticket has been closed."
-                                    : "Status: ${model.currentTicket.status}"
-                                : model.typing != null
-                                    ? model.typing ? "typing..." : ""
-                                    : "",
-                            style: GoogleFonts.roboto(fontSize: 14),
-                          ),
-                        ],
+                    model.currentTicket.contact.name != null
+                        ? CircleAvatar(
+                            child: Text(
+                                getInitials(model.currentTicket.contact.name)),
+                            backgroundColor: Colors.white,
+                          )
+                        : SizedBox.shrink(),
+                    Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Text(
+                              model.currentTicket.contact.name != null &&
+                                      model.currentTicket.contact.name != ""
+                                  ? model.currentTicket.contact.name
+                                  : model.currentTicket.uid,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              isArchive
+                                  ? model.currentTicket.status == "RESOLVED"
+                                      ? "This ticket has been closed."
+                                      : "Status: ${model.currentTicket.status}"
+                                  : model.typing != null
+                                      ? model.typing ? "typing..." : ""
+                                      : "",
+                              style: GoogleFonts.roboto(fontSize: 14),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

@@ -235,22 +235,31 @@ class HomePage extends StatelessWidget {
                                         ),
                                       ),
                                     ])
-                                  : Container(
-                                      width: 50.0,
-                                      height: 50.0, // border width
-                                      decoration: new BoxDecoration(
-                                          // color: TextColorLight, // border color
-                                          shape: BoxShape.circle,
-                                          color: Colors.transparent),
-                                      child: CircleAvatar(
-                                        backgroundColor: Colors.white,
-                                        backgroundImage: Image.asset(
-                                          "images/no-connection.png",
-                                          width: 50,
-                                          height: 50,
-                                          fit: BoxFit.cover,
-                                        ).image,
-                                      ))
+                                  : InkWell(
+                                      onTap: () => model.retryConnection(),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: <Widget>[
+                                          Container(
+                                              width: 50.0,
+                                              height: 50.0, // border width
+                                              decoration: new BoxDecoration(
+                                                  // color: TextColorLight, // border color
+                                                  shape: BoxShape.circle,
+                                                  color: Colors.transparent),
+                                              child: CircleAvatar(
+                                                backgroundColor: Colors.white,
+                                                backgroundImage: Image.asset(
+                                                  "images/no-connection.png",
+                                                  width: 50,
+                                                  height: 50,
+                                                  fit: BoxFit.cover,
+                                                ).image,
+                                              )),
+                                        ],
+                                      ),
+                                    )
                               : Container(),
                         ],
                       ),

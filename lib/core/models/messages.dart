@@ -1,5 +1,7 @@
 import 'dart:convert' as convertor;
 
+import 'dart:developer';
+
 class Messages {
   bool success;
   String message;
@@ -93,7 +95,9 @@ class Message {
     iV = json['__v'];
     replyTo = json['replyTo'];
     agentId = json['agentId'];
-    if (message[0] == "{" && message[message.length - 1] == "}") {
+    if (message != null &&
+        message[0] == "{" &&
+        message[message.length - 1] == "}") {
       try {
         Map<String, dynamic> currentMsg = convertor.json.decode(message);
 
@@ -117,6 +121,7 @@ class Message {
       } catch (e) {}
     } else {
       messageFormat = "text";
+      if (message == null) message = "EMPTY MESSAGE";
     }
   }
 

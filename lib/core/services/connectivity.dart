@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io'; //InternetAddress utility
 import 'dart:async'; //For StreamController/Stream
 
@@ -25,7 +26,6 @@ class ConnectionStatusSingleton {
   //Hook into flutter_connectivity's Stream to listen for changes
   //And check the connection status out of the gate
   void initialize() {
-    print("listening");
     _connectivity.onConnectivityChanged.listen(_connectionChange);
     checkConnection();
   }
@@ -49,7 +49,8 @@ class ConnectionStatusSingleton {
     bool previousConnection = hasConnection;
 
     try {
-      final result = await InternetAddress.lookup('google.com');
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(Duration(seconds: 10));
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         hasConnection = true;
       } else {
@@ -61,6 +62,7 @@ class ConnectionStatusSingleton {
 
     //The connection status changed send out an update to all listeners
     if (previousConnection != hasConnection) {
+      log("hasConnection: $hasConnection");
       connectionChangeController.add(hasConnection);
     }
 

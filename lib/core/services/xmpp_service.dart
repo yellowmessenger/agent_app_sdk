@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/services.dart';
 
 import 'package:support_agent/core/models/xmpp_user.dart';
+import 'package:support_agent/core/services/connectivity.dart';
 import 'package:support_agent/core/services/xmpp_creds.dart';
 import 'package:xmpp_rock/xmpp_rock.dart';
 
@@ -48,7 +51,21 @@ class XmppService {
   }
 
   _updateUI(String data) {
-    print("Service:" + data);
+    // print(data);
+    if (data[0] == "{" && data[data.length - 1] == "}") {
+      try {
+        Map<String, dynamic> incomingEvents = jsonDecode(data);
+        if (incomingEvents.containsKey("connected")) {
+          log("connection event");
+          bool xmppReady = incomingEvents["connected"];
+          log("connection $xmppReady");
+          if (!xmppReady) {
+            ConnectionStatusSingleton.getInstance().checkConnection();
+          }
+        }
+      } catch (e) {}
+    }
+
     _chatStreamController.sink.add(data);
   }
 
