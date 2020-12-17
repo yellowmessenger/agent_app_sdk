@@ -426,27 +426,27 @@ class ShowCustomFields extends StatelessWidget {
     model.customFields.fields.forEach((key, value) {
       customFields.add(
         InfoData(capitalize(value.name),
-            action: ((model.customFieldValues[key] !=
-                            model.currentTicket.customFieldsValues
-                                .fields[key]) &&
-                        !(model.customFieldValues[key] is List<dynamic> &&
-                            listEquals(
-                                model.currentTicket.customFieldsValues
-                                    .fields[key],
-                                model.customFieldValues[key]))) &&
-                    !(model.currentTicket.customFieldsValues.fields[key] ==
-                            null &&
-                        (model.customFieldValues[key] == "" ||
-                            (model.customFieldValues[key] is List<dynamic> &&
-                                model.customFieldValues[key].length == 0) ||
-                            model.customFieldValues[key] == null))
-                ? Container(
-                    child: Icon(
-                      Icons.backup,
-                      color: Danger,
-                    ),
-                  )
-                : null,
+            // action: ((model.customFieldValues[key] !=
+            //                 model.currentTicket.customFieldsValues
+            //                     .fields[key]) &&
+            //             !(model.customFieldValues[key] is List<dynamic> &&
+            //                 listEquals(
+            //                     model.currentTicket.customFieldsValues
+            //                         .fields[key],
+            //                     model.customFieldValues[key]))) &&
+            //         !(model.currentTicket.customFieldsValues.fields[key] ==
+            //                 null &&
+            //             (model.customFieldValues[key] == "" ||
+            //                 (model.customFieldValues[key] is List<dynamic> &&
+            //                     model.customFieldValues[key].length == 0) ||
+            //                 model.customFieldValues[key] == null))
+            //     ? Container(
+            //         child: Icon(
+            //           Icons.backup,
+            //           color: Danger,
+            //         ),
+            //       )
+            //     : null,
             bodyWidget: Column(
               children: <Widget>[
                 value.type == "checkboxes"

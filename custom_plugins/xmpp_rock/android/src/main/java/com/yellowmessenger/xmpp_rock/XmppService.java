@@ -86,6 +86,7 @@ public class XmppService {
         configBuilder.setConnectTimeout(10000);
         configBuilder.setSocketFactory(SSLSocketFactory.getDefault());
 
+
 //        configBuilder.setDebuggerEnabled(true);
         try {
             configBuilder.setCustomSSLContext(SSLContext.getInstance("TLS"));
