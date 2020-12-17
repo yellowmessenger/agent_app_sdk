@@ -2,7 +2,7 @@
 
 ## Step 1
 Download and unzip the local maven repo from the following link.
-https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.1.zip
+https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.3.zip
 
 ## Step 2 
 Consuming the Module  
