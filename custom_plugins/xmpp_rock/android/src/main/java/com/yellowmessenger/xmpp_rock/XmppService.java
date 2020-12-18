@@ -106,10 +106,14 @@ public class XmppService {
                     if (packet instanceof Message) {
                         Message message = (Message) packet;
                         Jid sender = message.getFrom();
-                        Log.d("Received message:", " "
-                                + (message != null ? message.getBody() : "NULL"));
-                        MyBus.getInstance().bus().send((message.getBody() != null ? message.getBody() : "{\"data\": null}"));
-                    }
+                        if(!message.getBodies().isEmpty() && message.getBodies().toArray().length > 0){
+                            Log.d("Received message:", " "
+                                    + (((Message.Body)(message.getBodies().toArray()[0])).getMessage()  != null ? ((Message.Body)(message.getBodies().toArray()[0])).getMessage() : "NULL"));
+
+                            MyBus.getInstance().bus().send((((Message.Body)(message.getBodies().toArray()[0])).getMessage() != null ?((Message.Body)(message.getBodies().toArray()[0])).getMessage() : "{\"data\": null}"));
+
+                        }
+                       }
                 }
             }, packetFilter);
             connection.addConnectionListener(connectionListener);
