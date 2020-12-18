@@ -89,9 +89,12 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
             MyBus.getInstance().bus().toObservable()
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(object -> {
+
                                 mEventSink.success(object);
                             }
-                    );
+                    ) ;
+
+
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
         }

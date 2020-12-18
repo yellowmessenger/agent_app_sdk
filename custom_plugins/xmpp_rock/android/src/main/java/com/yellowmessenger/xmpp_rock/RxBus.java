@@ -10,6 +10,7 @@ public class RxBus {
     private PublishSubject<Object> bus = PublishSubject.create();
 
     public void send(Object o) {
+        if(o != null)
         bus.onNext(o);
     }
 

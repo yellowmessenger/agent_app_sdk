@@ -108,7 +108,7 @@ public class XmppService {
                         Jid sender = message.getFrom();
                         Log.d("Received message:", " "
                                 + (message != null ? message.getBody() : "NULL"));
-                        MyBus.getInstance().bus().send((message != null ? message.getBody() : "{\"data\": null}"));
+                        MyBus.getInstance().bus().send((message.getBody() != null ? message.getBody() : "{\"data\": null}"));
                     }
                 }
             }, packetFilter);
