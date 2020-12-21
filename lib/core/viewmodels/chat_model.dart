@@ -293,112 +293,124 @@ class ChatModel extends BaseModel {
     );
   }
 
+  bool xmppReady = true;
   _updateMessageList(String data) {
     print(data);
     MessageFormat incoming;
-    if (data != "Stream Connected")
+    if (data != "Stream Connected") if (data[0] == "{" &&
+        data[data.length - 1] == "}") {
       try {
+        Map<String, dynamic> incomingEvents = jsonDecode(data);
         incoming = MessageFormat.fromJson(jsonDecode(data));
-
-        if (incoming.ticketId == _ticket.ticketId) {
+        if (incomingEvents.containsKey("connected")) {
           setState(ViewState.Busy);
-          if (incoming.data['typing'] == null &&
-                  incoming.data["event"] == null &&
-                  incoming.data['message'] != null
-              // && _messages[_messages.length - 1].message !=
-              //     incoming.data['message']
-              ) {
-            if (incoming.agentId != null &&
-                incoming.agentId == _authService.currentUserData.user.email &&
-                !sentMessageIds.contains(incoming.data["_id"])) {
-              sentMessageIds.add(incoming.data["_id"]);
-              _messages.add(Message(
-                  sender: incoming.agentId,
-                  message: incoming.data['message'],
-                  messageType: incoming.messageType,
-                  messageFormat: "text",
-                  replyTo: incoming.data['replyTo'] ?? null));
-            } else if (incoming.agentId == null ||
-                incoming.agentId != _authService.currentUserData.user.email) {
-              _messages.add(Message(
-                  sender: incoming.agentId,
-                  message: incoming.data['message'],
-                  messageType: incoming.messageType,
-                  messageFormat: "text",
-                  replyTo: incoming.data['replyTo'] ?? null));
-            }
-          } else if (incoming.data["event"] != null) {
-            //to set events
-            if (incoming.data["event"]["code"] == "bot-message-notification") {
-              if (incoming.data["event"]["data"]["message"] != null) {
-                _messages.add(Message(
-                    message: incoming.data["event"]["data"]["message"],
-                    messageType: incoming.messageType ?? "BOT",
-                    messageFormat: "text",
-                    replyTo: null));
-              } else if (incoming.data["event"]['data']['image'] != null) {
-                _messages.add(Message(
-                    sender: incoming.agentId,
-                    message: incoming.data["event"]['data']['image'],
-                    messageType: incoming.messageType,
-                    messageFormat: "image",
-                    caption: incoming.data["event"]['data']['options'] != null
-                        ? incoming.data["event"]['data']['options']["caption"]
-                        : incoming.data["event"]['data']['caption'] ?? null,
-                    replyTo: incoming.data['replyTo'] ?? null));
-              } else if (incoming.data["event"]['data']['file'] != null) {
-                _messages.add(Message(
-                    sender: incoming.agentId,
-                    message: incoming.data["event"]['data']['file'],
-                    messageType: incoming.messageType,
-                    messageFormat: "file",
-                    replyTo: incoming.data['replyTo'] ?? null));
-              } else if (incoming.data["event"]['data']['video'] != null) {
-                _messages.add(Message(
-                    sender: incoming.agentId,
-                    message: incoming.data["event"]['data']['video'],
-                    messageType: incoming.messageType,
-                    messageFormat: "video",
-                    caption: incoming.data["event"]['data']['options'] != null
-                        ? incoming.data["event"]['data']['options']["caption"]
-                        : incoming.data["event"]['data']['caption'] ?? null,
-                    replyTo: incoming.data['replyTo'] ?? null));
-              }
-            } else {
+          xmppReady = incomingEvents["connected"];
+          setState(ViewState.Idle);
+        }
+      } catch (e) {}
+    }
+    try {
+      incoming = MessageFormat.fromJson(jsonDecode(data));
+
+      if (incoming.ticketId == _ticket.ticketId) {
+        setState(ViewState.Busy);
+        if (incoming.data['typing'] == null &&
+                incoming.data["event"] == null &&
+                incoming.data['message'] != null
+            // && _messages[_messages.length - 1].message !=
+            //     incoming.data['message']
+            ) {
+          if (incoming.agentId != null &&
+              incoming.agentId == _authService.currentUserData.user.email &&
+              !sentMessageIds.contains(incoming.data["_id"])) {
+            sentMessageIds.add(incoming.data["_id"]);
+            _messages.add(Message(
+                sender: incoming.agentId,
+                message: incoming.data['message'],
+                messageType: incoming.messageType,
+                messageFormat: "text",
+                replyTo: incoming.data['replyTo'] ?? null));
+          } else if (incoming.agentId == null ||
+              incoming.agentId != _authService.currentUserData.user.email) {
+            _messages.add(Message(
+                sender: incoming.agentId,
+                message: incoming.data['message'],
+                messageType: incoming.messageType,
+                messageFormat: "text",
+                replyTo: incoming.data['replyTo'] ?? null));
+          }
+        } else if (incoming.data["event"] != null) {
+          //to set events
+          if (incoming.data["event"]["code"] == "bot-message-notification") {
+            if (incoming.data["event"]["data"]["message"] != null) {
               _messages.add(Message(
                   message: incoming.data["event"]["data"]["message"],
                   messageType: incoming.messageType ?? "BOT",
-                  messageFormat: "event",
+                  messageFormat: "text",
                   replyTo: null));
+            } else if (incoming.data["event"]['data']['image'] != null) {
+              _messages.add(Message(
+                  sender: incoming.agentId,
+                  message: incoming.data["event"]['data']['image'],
+                  messageType: incoming.messageType,
+                  messageFormat: "image",
+                  caption: incoming.data["event"]['data']['options'] != null
+                      ? incoming.data["event"]['data']['options']["caption"]
+                      : incoming.data["event"]['data']['caption'] ?? null,
+                  replyTo: incoming.data['replyTo'] ?? null));
+            } else if (incoming.data["event"]['data']['file'] != null) {
+              _messages.add(Message(
+                  sender: incoming.agentId,
+                  message: incoming.data["event"]['data']['file'],
+                  messageType: incoming.messageType,
+                  messageFormat: "file",
+                  replyTo: incoming.data['replyTo'] ?? null));
+            } else if (incoming.data["event"]['data']['video'] != null) {
+              _messages.add(Message(
+                  sender: incoming.agentId,
+                  message: incoming.data["event"]['data']['video'],
+                  messageType: incoming.messageType,
+                  messageFormat: "video",
+                  caption: incoming.data["event"]['data']['options'] != null
+                      ? incoming.data["event"]['data']['options']["caption"]
+                      : incoming.data["event"]['data']['caption'] ?? null,
+                  replyTo: incoming.data['replyTo'] ?? null));
             }
-          } else if (incoming.data['image'] != null) {
-            _messages.add(Message(
-                sender: incoming.agentId,
-                message: incoming.data['image'],
-                messageType: incoming.messageType,
-                messageFormat: "image",
-                replyTo: incoming.data['replyTo'] ?? null));
-          } else if (incoming.data['file'] != null) {
-            _messages.add(Message(
-                sender: incoming.agentId,
-                message: incoming.data['file'],
-                messageType: incoming.messageType,
-                messageFormat: "file",
-                replyTo: incoming.data['replyTo'] ?? null));
-          } else if (incoming.data['video'] != null) {
-            _messages.add(Message(
-                sender: incoming.agentId,
-                message: incoming.data['video'],
-                messageType: incoming.messageType,
-                messageFormat: "video",
-                replyTo: incoming.data['replyTo'] ?? null));
           } else {
-            showTyping(incoming.data['typing']);
+            _messages.add(Message(
+                message: incoming.data["event"]["data"]["message"],
+                messageType: incoming.messageType ?? "BOT",
+                messageFormat: "event",
+                replyTo: null));
           }
+        } else if (incoming.data['image'] != null) {
+          _messages.add(Message(
+              sender: incoming.agentId,
+              message: incoming.data['image'],
+              messageType: incoming.messageType,
+              messageFormat: "image",
+              replyTo: incoming.data['replyTo'] ?? null));
+        } else if (incoming.data['file'] != null) {
+          _messages.add(Message(
+              sender: incoming.agentId,
+              message: incoming.data['file'],
+              messageType: incoming.messageType,
+              messageFormat: "file",
+              replyTo: incoming.data['replyTo'] ?? null));
+        } else if (incoming.data['video'] != null) {
+          _messages.add(Message(
+              sender: incoming.agentId,
+              message: incoming.data['video'],
+              messageType: incoming.messageType,
+              messageFormat: "video",
+              replyTo: incoming.data['replyTo'] ?? null));
+        } else {
+          showTyping(incoming.data['typing']);
         }
-      } catch (e) {
-        // print(e);
       }
+    } catch (e) {
+      // print(e);
+    }
     setState(ViewState.Idle);
   }
 
@@ -975,5 +987,9 @@ class ChatModel extends BaseModel {
             SizedBox.shrink(),
       ),
     );
+  }
+
+  goOnline() async {
+    await _xmppService.initializeXmpp();
   }
 }

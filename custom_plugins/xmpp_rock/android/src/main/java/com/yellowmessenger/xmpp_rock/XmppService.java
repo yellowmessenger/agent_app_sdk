@@ -288,8 +288,6 @@ public class XmppService {
             chat_created = false;
             loggedin = false;
 
-
-
         }
 
 

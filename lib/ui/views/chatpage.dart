@@ -43,17 +43,21 @@ class ChatPage extends StatelessWidget {
         onModelReady: (model) async => await model.initChat(ticket, context),
         builder: (context, model, child) => Scaffold(
             appBar: AppBar(
-                backgroundColor: AccentBlue,
+                backgroundColor: model.xmppReady ? AccentBlue : Danger,
                 title: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    model.currentTicket.contact.name != null
-                        ? CircleAvatar(
-                            child: Text(
-                                getInitials(model.currentTicket.contact.name)),
-                            backgroundColor: Colors.white,
-                          )
-                        : SizedBox.shrink(),
+                    model.xmppReady
+                        ? (model.currentTicket.contact.name != null
+                            ? CircleAvatar(
+                                child: Text(getInitials(
+                                    model.currentTicket.contact.name)),
+                                backgroundColor: Colors.white,
+                              )
+                            : SizedBox.shrink())
+                        : IconButton(
+                            icon: Icon(Icons.refresh),
+                            onPressed: () => model.goOnline()),
                     Flexible(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -61,13 +65,17 @@ class ChatPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
-                            Text(
-                              model.currentTicket.contact.name != null &&
-                                      model.currentTicket.contact.name != ""
-                                  ? model.currentTicket.contact.name
-                                  : model.currentTicket.uid,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            model.xmppReady
+                                ? Text(
+                                    model.currentTicket.contact.name != null &&
+                                            model.currentTicket.contact.name !=
+                                                ""
+                                        ? model.currentTicket.contact.name
+                                        : model.currentTicket.uid,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : Text("Agent Disconnected\nTap to reconnect",
+                                    style: GoogleFonts.roboto(fontSize: 14)),
                             Text(
                               isArchive
                                   ? model.currentTicket.status == "RESOLVED"
