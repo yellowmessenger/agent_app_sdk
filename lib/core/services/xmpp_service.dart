@@ -30,7 +30,6 @@ class XmppService {
           fullJid: "${xmppUser.username}@xmpp.yellowmssngr.com",
           password: xmppUser.password,
           port: 443);
-      log("connection status Priyank" + res.toString());
       return res;
       // print(xmppUser.username);
     } on PlatformException {
@@ -50,7 +49,6 @@ class XmppService {
     }
   }
 
-  Timer xmppReconnectionTimer;
   _updateUI(String data) {
     // print(data);
     if (data[0] == "{" && data[data.length - 1] == "}") {

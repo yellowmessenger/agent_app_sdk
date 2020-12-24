@@ -290,7 +290,7 @@ class HomePage extends StatelessWidget {
                     top: 30,
                     left: 20,
                     child: Container(
-                      child: Text("YM Partner SDK v1.0.5",
+                      child: Text("YM Partner SDK v1.0.7",
                           style: GoogleFonts.roboto(
                               fontSize: 12,
                               color: TextColorLight,

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.util.Log;
 
@@ -86,7 +87,6 @@ public class XmppService {
         configBuilder.setConnectTimeout(10000);
         configBuilder.setSocketFactory(SSLSocketFactory.getDefault());
 
-
 //        configBuilder.setDebuggerEnabled(true);
         try {
             configBuilder.setCustomSSLContext(SSLContext.getInstance("TLS"));
@@ -113,7 +113,7 @@ public class XmppService {
                             MyBus.getInstance().bus().send((((Message.Body)(message.getBodies().toArray()[0])).getMessage() != null ?((Message.Body)(message.getBodies().toArray()[0])).getMessage() : "{\"data\": null}"));
 
                         }
-                       }
+                    }
                 }
             }, packetFilter);
             connection.addConnectionListener(connectionListener);
@@ -126,15 +126,28 @@ public class XmppService {
     // Disconnect Function
     public void disconnectConnection() {
 
-        if (connection != null) {
+
         try {
-            connection.disconnect();
-            connection = null;
+            HandlerThread handlerThread = new HandlerThread("MyHandlerThread");
+            handlerThread.start();
+            Looper looper = handlerThread.getLooper();
+            Handler handler = new Handler(looper);
+            handler.post(new Runnable() {
+
+                @Override
+                public void run() {
+                    if (connection != null) {
+                        connection.disconnect();
+                        connection = null;
+                    }
+                }
+            });
+
         }
         catch (Exception e){
             Log.e("Disconnection error",e.getMessage());
         }
-        }
+
 //            new Thread(() -> {
 //                connection.disconnect();
 //                connection = null;
@@ -161,46 +174,46 @@ public class XmppService {
                 }
 
                 @Override
-            protected void onPostExecute(Boolean aBoolean) {
-                super.onPostExecute(aBoolean);
+                protected void onPostExecute(Boolean aBoolean) {
+                    super.onPostExecute(aBoolean);
 //                MyBus.getInstance().bus().send("{\"connected\": "+ aBoolean.toString() + "}");
-            }
+                }
 
 
 
-            @Override
-            protected Boolean doInBackground(Void... arg0) {
-                // Create a connection
-                try {
-                    connection.connect();
-                    login();
-                    connected = true;
-                    Presence p = new Presence(available, "AVAILABLE", 1, Presence.Mode.available);
+                @Override
+                protected Boolean doInBackground(Void... arg0) {
+                    // Create a connection
                     try {
-                        connection.sendStanza(p);
-                    } catch (SmackException.NotConnectedException e) {
+                        connection.connect();
+                        login();
+                        connected = true;
+                        Presence p = new Presence(available, "AVAILABLE", 1, Presence.Mode.available);
+                        try {
+                            connection.sendStanza(p);
+                        } catch (SmackException.NotConnectedException e) {
+                            e.printStackTrace();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (SmackException e) {
+                        e.printStackTrace();
+                    } catch (XMPPException e) {
                         e.printStackTrace();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (SmackException e) {
-                    e.printStackTrace();
-                } catch (XMPPException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    return connected;
                 }
-                return connected;
-            }
 
 
-        };
-        connectionThread.execute();
+            };
+            connectionThread.execute();
 
-    }
+        }
 
     }
 
@@ -227,13 +240,39 @@ public class XmppService {
 
     public void login() {
         if(connection != null && !connection.isAuthenticated()){
+
             try {
                 connection.login(userName, passWord);
-
-            } catch (XMPPException | SmackException | IOException e) {
+            } catch (XMPPException e) {
                 e.printStackTrace();
-            } catch (Exception e) {
+            } catch (SmackException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+
+//            HandlerThread handlerThread = new HandlerThread("MyHandlerThread");
+//            handlerThread.start();
+//            Looper looper = handlerThread.getLooper();
+//            Handler handler = new Handler(looper);
+//            handler.post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        connection.login(userName, passWord);
+//                    } catch (XMPPException e) {
+//                        e.printStackTrace();
+//                    } catch (SmackException e) {
+//                        e.printStackTrace();
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            });
 
         }
     }
@@ -287,6 +326,8 @@ public class XmppService {
             connected = false;
             chat_created = false;
             loggedin = false;
+
+
 
         }
 

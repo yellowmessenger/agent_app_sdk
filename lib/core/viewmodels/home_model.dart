@@ -372,7 +372,8 @@ class HomeModel extends BaseModel {
   }
 
   void goOnline() {
-    if (_xmppService.chatStreamSubscription.isPaused) _xmppConnection();
+    if (_xmppService.chatStreamSubscription != null && _xmppService.chatStreamSubscription.isPaused) _xmppConnection();
+    else _xmppService.initializeXmpp();
   }
 
   void retryConnection() {

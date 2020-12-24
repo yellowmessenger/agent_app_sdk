@@ -110,7 +110,7 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
 
 
         try {
-            if(xmppService.connection !=null && xmppService.connection.isConnected()){xmppService.disconnectConnection();}
+
             xmppService.init(fullJid, xmppPassword, port);
              xmppService.connectConnection(mContext);
             return xmppService.connection.isConnected();
