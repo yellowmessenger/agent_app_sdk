@@ -5,6 +5,7 @@ import android.os.Handler;
 
 import androidx.annotation.NonNull;
 
+import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jxmpp.stringprep.XmppStringprepException;
 
 import io.flutter.Log;
@@ -31,7 +32,6 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
     private Context mContext;
     private MethodChannel methodChannel;
     private EventChannel eventChannel;
-    XmppService xmppService = new XmppService();
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
@@ -89,11 +89,9 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
             MyBus.getInstance().bus().toObservable()
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(object -> {
-
                                 mEventSink.success(object);
                             }
                     ) ;
-
 
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
@@ -103,17 +101,19 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
 
     @Override
     public void onCancel(Object arguments) {
-       xmppService.disconnectConnection();
+        closeConnetion();
     }
 
     private Boolean initXMPP(Context mContext, String fullJid, String xmppPassword, int port) {
 
 
         try {
+            XmppService xmppServiceInstance;
+            xmppServiceInstance = XmppService.getInstance();
 
-            xmppService.init(fullJid, xmppPassword, port);
-             xmppService.connectConnection(mContext);
-            return xmppService.connection.isConnected();
+            xmppServiceInstance.init(fullJid, xmppPassword, port);
+            xmppServiceInstance.connectConnection(mContext);
+            return xmppServiceInstance.connection.isConnected();
 
 
         } catch (XmppStringprepException e) {
@@ -126,7 +126,11 @@ public class XmppRockPlugin implements FlutterPlugin, MethodCallHandler, EventCh
     private Boolean closeConnetion() {
 
 
-        try {xmppService.disconnectConnection();
+        try {
+            XmppService xmppServiceInstance;
+            xmppServiceInstance = XmppService.getInstance();
+
+            xmppServiceInstance.disconnectConnection();
 
             return true;
         } catch (Exception e) {

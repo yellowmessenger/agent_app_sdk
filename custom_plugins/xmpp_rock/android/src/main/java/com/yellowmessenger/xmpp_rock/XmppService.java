@@ -63,6 +63,17 @@ public class XmppService {
     private boolean loggedin;
     StanzaFilter packetFilter = new StanzaTypeFilter(Message.class);
 
+    private static XmppService xmppServiceInstance;
+
+    private XmppService(){}
+
+    public static XmppService getInstance(){
+        if(xmppServiceInstance == null){
+            xmppServiceInstance = new XmppService();
+        }
+        return xmppServiceInstance;
+    }
+
 
 
     //Initialize
@@ -119,6 +130,9 @@ public class XmppService {
             connection.addConnectionListener(connectionListener);
 
         }
+//        else{
+//
+//        }
 
 
     }
@@ -133,16 +147,14 @@ public class XmppService {
             Looper looper = handlerThread.getLooper();
             Handler handler = new Handler(looper);
             handler.post(new Runnable() {
-
                 @Override
                 public void run() {
-                    if (connection != null) {
+                    if (connection != null && connection.isConnected()) {
                         connection.disconnect();
                         connection = null;
                     }
                 }
             });
-
         }
         catch (Exception e){
             Log.e("Disconnection error",e.getMessage());
@@ -185,17 +197,22 @@ public class XmppService {
                 protected Boolean doInBackground(Void... arg0) {
                     // Create a connection
                     try {
-                        connection.connect();
-                        login();
-                        connected = true;
-                        Presence p = new Presence(available, "AVAILABLE", 1, Presence.Mode.available);
-                        try {
-                            connection.sendStanza(p);
-                        } catch (SmackException.NotConnectedException e) {
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                        if(connection != null) {
+                            if (connection.isConnected()) {
+                                connection.disconnect();
+                            }
+                            connection.connect();
+//                            login();
+                            connected = true;
                         }
+//                        Presence p = new Presence(available, "AVAILABLE", 1, Presence.Mode.available);
+//                        try {
+//                            connection.sendStanza(p);
+//                        } catch (SmackException.NotConnectedException e) {
+//                            e.printStackTrace();
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -217,29 +234,29 @@ public class XmppService {
 
     }
 
-
-    public void sendMsg(String jid, String message) {
-        if (connection.isConnected() == true) {
-            // Assume we've created an XMPPConnection name "connection"._
-            chatmanager = ChatManager.getInstanceFor(connection);
-            try {
-                newChat = chatmanager.chatWith(JidCreate.from(jid).asEntityBareJidIfPossible());
-            } catch (XmppStringprepException e) {
-                e.printStackTrace();
-            }
-            try {
-                newChat.send(message);
-            } catch (SmackException.NotConnectedException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+//
+//    public void sendMsg(String jid, String message) {
+//        if (connection.isConnected() == true) {
+//            // Assume we've created an XMPPConnection name "connection"._
+//            chatmanager = ChatManager.getInstanceFor(connection);
+//            try {
+//                newChat = chatmanager.chatWith(JidCreate.from(jid).asEntityBareJidIfPossible());
+//            } catch (XmppStringprepException e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                newChat.send(message);
+//            } catch (SmackException.NotConnectedException e) {
+//                e.printStackTrace();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
 
 
     public void login() {
-        if(connection != null && !connection.isAuthenticated()){
+        if(connection != null && connection.isConnected() && !connection.isAuthenticated()){
 
             try {
                 connection.login(userName, passWord);
@@ -283,18 +300,21 @@ public class XmppService {
 
         @Override
         public void connected(final XMPPConnection connection) {
+            if (isToasted)
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // TODO Auto-generated method stub
+                        if (!connection.isAuthenticated()) {
+                            login();
+                        }
+                    }
+                });
             Log.d("xmpp", "Connected!");
             MyBus.getInstance().bus().send("{\"connected\": "+ true + "}");
             connected = true;
-            if (!connection.isAuthenticated()) {
-                login();
-            }
-
 
         }
-
-
-
 
         @Override
         public void connectionClosed() {
@@ -376,8 +396,26 @@ public class XmppService {
             if(connection.isAuthenticated())
             {
                 Log.d("xmpp", "Authenticated!");
-
-
+                HandlerThread handlerThread = new HandlerThread("MyHandlerThread");
+                handlerThread.start();
+                Looper looper = handlerThread.getLooper();
+                Handler handler = new Handler(looper);
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (connection != null) {
+                            Presence p = new Presence(available, "AVAILABLE", 1, Presence.Mode.available);
+                            try {
+                                connection.sendStanza(p);
+                            } catch (SmackException.NotConnectedException e) {
+                                e.printStackTrace();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+                connected = true;
                 loggedin = true;
                 chat_created = false;
 
