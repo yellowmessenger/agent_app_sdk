@@ -305,13 +305,14 @@ public class XmppService {
                     @Override
                     public void run() {
                         // TODO Auto-generated method stub
-                        if (!connection.isAuthenticated()) {
-                            login();
-                        }
+
                     }
                 });
             Log.d("xmpp", "Connected!");
             MyBus.getInstance().bus().send("{\"connected\": "+ true + "}");
+            if (!connection.isAuthenticated()) {
+                login();
+            }
             connected = true;
 
         }
