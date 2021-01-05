@@ -342,23 +342,19 @@ public class XmppService {
                     public void run() {
                     }
                 });
+
             Log.d("xmpp", "ConnectionClosedOn Error!");
             MyBus.getInstance().bus().send("{\"connected\": "+ false + "}");
             connected = false;
             chat_created = false;
             loggedin = false;
-
-
-
         }
-
 
         @Override
         public void reconnectingIn(int arg0) {
             Log.d("xmpp", "Reconnectingin " + arg0);
             loggedin = false;
         }
-
 
         @Override
         public void reconnectionFailed(Exception arg0) {
@@ -385,6 +381,7 @@ public class XmppService {
                         // TODO Auto-generated method stub
                     }
                 });
+
             Log.d("xmpp", "ReconnectionSuccessful");
             connected = true;
             chat_created = false;
@@ -419,12 +416,8 @@ public class XmppService {
                 connected = true;
                 loggedin = true;
                 chat_created = false;
-
-
+                MyBus.getInstance().bus().send("{\"authenticated\": "+ connection.isAuthenticated() + "}");
             }
-            MyBus.getInstance().bus().send("{\"authenticated\": "+ connection.isAuthenticated() + "}");
-
-
             if (isToasted)
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override

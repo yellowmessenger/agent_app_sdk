@@ -132,7 +132,9 @@ class HomeModel extends BaseModel {
     if (isOffline) {
       xmppReady = !isOffline;
       _xmppService.closeCurrentConnection();
-      // if (!_xmppService.chatStreamSubscription.isPaused) _xmppConnection();
+
+
+
     } else {
       goOnline();
     }
@@ -372,8 +374,7 @@ class HomeModel extends BaseModel {
   }
 
   void goOnline() {
-    if (_xmppService.chatStreamSubscription != null && _xmppService.chatStreamSubscription.isPaused) _xmppConnection();
-    else _xmppService.initializeXmpp();
+    _xmppConnection();
   }
 
   void retryConnection() {

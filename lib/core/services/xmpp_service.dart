@@ -23,7 +23,7 @@ class XmppService {
     XmppCredsModel xmppUser = _xmppCredsService.xmppCreds;
     _enableXmpp();
     try {
-      XmppRock.close();
+//      XmppRock.close();
       print("${xmppUser.username}@xmpp.yellowmssngr.com");
 
       var res = await XmppRock.initialize(

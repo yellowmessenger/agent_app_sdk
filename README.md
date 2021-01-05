@@ -2,7 +2,7 @@
 
 ## Step 1
 Download and unzip the local maven repo from the following link.
-https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.8.zip
+https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.10.zip
 
 ## Step 2 
 Consuming the Module  
@@ -21,10 +21,8 @@ Consuming the Module
   
 3. Make the host app depend on the Flutter module:    
 ``` gradle
-dependencies {      
-debugImplementation 'com.yellowmessenger.agent_app_flutter_sdk:flutter_debug:1.0'      
-profileImplementation 'com.yellowmessenger.agent_app_flutter_sdk:flutter_profile:1.0'      
-releaseImplementation 'com.yellowmessenger.agent_app_flutter_sdk:flutter_release:1.0'    
+dependencies {          
+implementation 'com.yellowmessenger.agent_app_flutter_sdk:flutter_release:1.0'    
 }  
 ```
 4. Add the `profile` build type:   
