@@ -178,27 +178,27 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     setupNotifications();
-    _firebaseMessaging.requestNotificationPermissions(
-        const IosNotificationSettings(
-            sound: true, badge: true, alert: true, provisional: false));
-    _firebaseMessaging.onIosSettingsRegistered
-        .listen((IosNotificationSettings settings) {
-      // print("Settings registered: $settings");
-    });
-    _firebaseMessaging.configure(
-      onMessage: (Map<String, dynamic> message) async {
-        print(jsonEncode(message));
+    // _firebaseMessaging.requestNotificationPermissions(
+    //     const IosNotificationSettings(
+    //         sound: true, badge: true, alert: true, provisional: false));
+    // _firebaseMessaging.onIosSettingsRegistered
+    //     .listen((IosNotificationSettings settings) {
+    //   // print("Settings registered: $settings");
+    // });
+    // _firebaseMessaging.configure(
+    //   onMessage: (Map<String, dynamic> message) async {
+    //     print(jsonEncode(message));
 
-        sendNotification(
-            message['notification']['title'], message['notification']['body']);
-      },
-      onLaunch: (Map<String, dynamic> message) async {
-        // print("onLaunch: $message");
-      },
-      onResume: (Map<String, dynamic> message) async {
-        // print("onResume: $message");
-      },
-    );
+    //     sendNotification(
+    //         message['notification']['title'], message['notification']['body']);
+    //   },
+    //   onLaunch: (Map<String, dynamic> message) async {
+    //     // print("onLaunch: $message");
+    //   },
+    //   onResume: (Map<String, dynamic> message) async {
+    //     // print("onResume: $message");
+    //   },
+    // );
     _firebaseMessaging.getToken().then((String token) {
       assert(token != null);
       setState(() {

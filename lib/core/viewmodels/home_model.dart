@@ -132,9 +132,6 @@ class HomeModel extends BaseModel {
     if (isOffline) {
       xmppReady = !isOffline;
       _xmppService.closeCurrentConnection();
-
-
-
     } else {
       goOnline();
     }
