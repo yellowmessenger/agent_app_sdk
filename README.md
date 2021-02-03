@@ -2,7 +2,7 @@
 
 ## Step 1
 Download and unzip the local maven repo from the following link.
-https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.10.zip
+https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.12.zip
 
 ## Step 2 
 Consuming the Module  
@@ -62,6 +62,13 @@ public class MainActivity extends AppCompatActivity {
                 .getInstance()
                 .put("my_engine_id", flutterEngine);
 
+        // Setting notification handler.
+        FlutterViewActivity.setNotificationCallback((HashMap<String, Object> payLoadData)->{
+            Log.d("New message", "This is a local notification from ticketId: "+payLoadData.get("ticketId").toString()); // printing sample payload value
+            // Notification Handler Implementation
+            return true;
+                });
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -103,6 +110,8 @@ import io.flutter.plugin.common.MethodChannel;
 public class FlutterViewActivity extends FlutterActivity {
     private static final String CHANNEL = "com.yellowmessenger.support_agent/data";
     public static String ticketId;
+    public static Function notificationCallBack;
+
 
     @Override
     public FlutterEngine provideFlutterEngine(Context context) {
@@ -143,6 +152,13 @@ public class FlutterViewActivity extends FlutterActivity {
                         FlutterViewActivity.ticketId = null;
                         result.success(true);
                     }
+         else if (call.method.equals("send-notification")) {
+                        Log.d("Local Notification", "This is a local notification ");
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            notificationCallBack.apply(call.argument("payload"));
+                        }
+
+                    }
         else {
             result.notImplemented();
         }
@@ -153,6 +169,12 @@ public class FlutterViewActivity extends FlutterActivity {
     public static boolean setTicketId (String ticketId){
         FlutterViewActivity.ticketId = ticketId;
         return true;
+    }
+
+    public static void setNotificationCallback (Function<HashMap<String, Object>, Boolean> callBack){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        FlutterViewActivity.notificationCallBack = callBack;
+        }
     }
 
 

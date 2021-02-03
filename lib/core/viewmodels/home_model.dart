@@ -211,8 +211,8 @@ class HomeModel extends BaseModel {
         if (incoming.type == "support" &&
             incoming.messageType == "BOT" &&
             incoming.data['event'] == null) {
-          setNotification();
-          sendNotification("New Ticket", incoming.ticketId);
+          sendNotification("New Ticket", incoming.ticketId,
+              payload: incoming.toJson());
         } else if (incoming.type == "sender") {
           if (incoming.data['typing'] == null &&
               incoming.data['event'] == null) {
@@ -221,10 +221,10 @@ class HomeModel extends BaseModel {
             if (_ticketService.currentTicketId == null ||
                 _appState.appState == AppLifecycleState.paused) {
               sendNotification(incoming.contact.name, incoming.data['message'],
-                  payload: incoming.ticketId);
+                  payload: incoming.toJson());
             } else if (_ticketService.currentTicketId != incoming.ticketId)
               sendNotification(incoming.contact.name, incoming.data['message'],
-                  payload: incoming.ticketId);
+                  payload: incoming.toJson());
           }
         }
       } catch (e) {}

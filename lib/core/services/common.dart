@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,18 +25,23 @@ launchURL(String url) async {
   }
 }
 
-sendNotification(String title, String body, {String payload}) async {
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-  var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'com.yellowmessenger.partner', 'Yellow Partner', 'Support agent app.',
-      importance: Importance.max, priority: Priority.high, ticker: 'ticker');
-  var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-  var platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-      iOS: iOSPlatformChannelSpecifics);
-  await flutterLocalNotificationsPlugin.show(
-      0, title, body, platformChannelSpecifics);
+sendNotification(String title, String body, {Map payload}) async {
+  const platform =
+      const MethodChannel('com.yellowmessenger.support_agent/data');
+  var data =
+      await platform.invokeMethod("send-notification", {"payload": payload});
+
+  // FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  //     FlutterLocalNotificationsPlugin();
+  // var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+  //     'com.yellowmessenger.partner', 'Yellow Partner', 'Support agent app.',
+  //     importance: Importance.max, priority: Priority.high, ticker: 'ticker');
+  // var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+  // var platformChannelSpecifics = NotificationDetails(
+  //     android: androidPlatformChannelSpecifics,
+  //     iOS: iOSPlatformChannelSpecifics);
+  // await flutterLocalNotificationsPlugin.show(
+  //     0, title, body, platformChannelSpecifics);
   // .show(0, title, body, platformChannelSpecifics, payload: payload ?? "");
 }
 
