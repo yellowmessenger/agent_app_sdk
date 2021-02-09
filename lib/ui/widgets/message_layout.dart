@@ -382,12 +382,13 @@ class MessageFormatting extends StatelessWidget {
                     ],
                   ),
                 )),
-            if (sender != null)
-              Text(sender,
-                  style: GoogleFonts.roboto(
-                      fontSize: 12,
-                      color: TextColorMedium,
-                      fontWeight: FontWeight.bold)),
+            // To hide sender's email
+            // if (sender != null)
+            //   Text(sender,
+            //       style: GoogleFonts.roboto(
+            //           fontSize: 12,
+            //           color: TextColorMedium,
+            //           fontWeight: FontWeight.bold)),
             Text(
                 timestamp == null
                     ? ""
