@@ -253,23 +253,16 @@ class HomePage extends StatelessWidget {
                                                 MainAxisAlignment.center,
                                             children: <Widget>[
                                               Container(
-                                                  width: 50.0,
-                                                  height: 50.0, // border width
+                                                  width: 40.0,
+                                                  height: 40.0, // border width
                                                   decoration: new BoxDecoration(
                                                       // color: TextColorLight, // border color
                                                       shape: BoxShape.circle,
                                                       color:
                                                           Colors.transparent),
-                                                  child: CircleAvatar(
-                                                    backgroundColor:
-                                                        Colors.white,
-                                                    backgroundImage:
-                                                        Image.asset(
-                                                      "images/reconnect.png",
-                                                      width: 50,
-                                                      height: 50,
-                                                      fit: BoxFit.cover,
-                                                    ).image,
+                                                  child: Image.asset(
+                                                    "images/reconnect_active.png",
+                                                    height: 30,
                                                   )),
                                             ],
                                           ),
