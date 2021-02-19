@@ -265,7 +265,7 @@ class HomePage extends StatelessWidget {
                                                         Colors.white,
                                                     backgroundImage:
                                                         Image.asset(
-                                                      "images/no-connection.png",
+                                                      "images/reconnect.png",
                                                       width: 50,
                                                       height: 50,
                                                       fit: BoxFit.cover,
@@ -290,7 +290,7 @@ class HomePage extends StatelessWidget {
                     top: 30,
                     left: 20,
                     child: Container(
-                      child: Text("YM Partner SDK v1.0.14",
+                      child: Text("YM Partner SDK v1.0.15",
                           style: GoogleFonts.roboto(
                               fontSize: 12,
                               color: TextColorLight,

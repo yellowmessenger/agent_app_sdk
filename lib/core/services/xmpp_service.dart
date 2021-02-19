@@ -24,10 +24,10 @@ class XmppService {
     _enableXmpp();
     try {
 //      XmppRock.close();
-      print("${xmppUser.username}@xmpp.yellowmssngr.com");
+      print("${xmppUser.username}@xmpp.yellowmssngr.com/agentappsdk");
 
       var res = await XmppRock.initialize(
-          fullJid: "${xmppUser.username}@xmpp.yellowmssngr.com",
+          fullJid: "${xmppUser.username}@xmpp.yellowmssngr.com/agentappsdk",
           password: xmppUser.password,
           port: 443);
       return res;

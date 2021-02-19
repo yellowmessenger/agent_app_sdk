@@ -122,11 +122,17 @@ class _MyTicketsPageState extends State<MyTicketsPage> {
                                             color: TextColorLight)),
                                   ),
                                   trailing: Text(
-                                      timeago.format(DateTime.parse(model
-                                                  .tickets[itemIndex].updated ??
+                                      model.tickets[itemIndex].updated ==
+                                                  null &&
                                               model.tickets[itemIndex]
-                                                  .timestamp)) ??
-                                          "",
+                                                      .timestamp ==
+                                                  null
+                                          ? timeago.format(DateTime.tryParse(
+                                              model.tickets[itemIndex]
+                                                      .updated ??
+                                                  model.tickets[itemIndex]
+                                                      .timestamp))
+                                          : "",
                                       style: GoogleFonts.roboto(
                                           fontSize: 12,
                                           color: !model
