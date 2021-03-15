@@ -321,15 +321,21 @@ class ChatModel extends BaseModel {
             //     incoming.data['message']
             ) {
           if (incoming.agentId != null &&
-              incoming.agentId == _authService.currentUserData.user.email &&
-              !sentMessageIds.contains(incoming.data["_id"])) {
-            sentMessageIds.add(incoming.data["_id"]);
-            _messages.add(Message(
-                sender: incoming.agentId,
-                message: incoming.data['message'],
-                messageType: incoming.messageType,
-                messageFormat: "text",
-                replyTo: incoming.data['replyTo'] ?? null));
+              incoming.agentId == _authService.currentUserData.user.email) {
+            if (sentMessageIds.contains(incoming.data["_id"])) {
+              _messages
+                  .singleWhere((element) => element.sId == incoming.data["_id"])
+                  .message = incoming.data['message'];
+            } else {
+              sentMessageIds.add(incoming.data["_id"]);
+              _messages.add(Message(
+                  sId: incoming.data["_id"],
+                  sender: incoming.agentId,
+                  message: incoming.data['message'],
+                  messageType: incoming.messageType,
+                  messageFormat: "text",
+                  replyTo: incoming.data['replyTo'] ?? null));
+            }
           } else if (incoming.agentId == null ||
               incoming.agentId != _authService.currentUserData.user.email) {
             _messages.add(Message(
@@ -473,6 +479,7 @@ class ChatModel extends BaseModel {
           if (!sentMessageIds.contains(messageId)) {
             sentMessageIds.add(messageId);
             _messages.add(Message(
+                sId: messageId,
                 sender: _authService.currentUserData.user.email,
                 message: msg,
                 messageType: "AGENT",
@@ -571,19 +578,19 @@ class ChatModel extends BaseModel {
                                   }
                                   return null;
                                 },
-                                initialValue: currentTicket.customFieldsValues != null
+                                initialValue: currentTicket.customFieldsValues !=
+                                        null
                                     ? currentTicket
                                         .customFieldsValues.fields[fieldKey]
                                     : _customDataService.customData != null &&
                                             _customDataService.customData
                                                 .containsKey(_botService
                                                     .defaultBot.userName) &&
-                                            _customDataService.customData[
-                                                    _botService
-                                                        .defaultBot.userName]
+                                            _customDataService.customData[_botService
+                                                    .defaultBot.userName]
                                                 .containsKey(_ticket.ticketId)
-                                        ? _customDataService
-                                                .customData[_botService.defaultBot.userName]
+                                        ? _customDataService.customData[
+                                                _botService.defaultBot.userName]
                                             [_ticket.ticketId][fieldKey]
                                         : "",
                                 decoration: InputDecoration(

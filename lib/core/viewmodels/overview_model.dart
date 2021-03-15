@@ -57,12 +57,11 @@ class OverViewModel extends BaseModel {
     //get realtime stats.
     getRealTimeStats(authToken, botId); // for initial data
     timer = Timer.periodic(
-        Duration(seconds: 3),
+        Duration(seconds: 60),
         (Timer t) => _debouncer.run(() async {
               try {
                 await getRealTimeStats(authToken, botId);
-              } catch (e) {
-              }
+              } catch (e) {}
             }));
 
     try {
@@ -170,7 +169,6 @@ class OverViewModel extends BaseModel {
     setState(ViewState.Busy);
     weeklyResolvedList = reolutionResponse.hourlyRes;
     weeklyResolutionResponseChart = [
-      
       charts.Series<HourlyStats, int>(
           data: weeklyResolvedList,
           id: 'Resolved Weekly',

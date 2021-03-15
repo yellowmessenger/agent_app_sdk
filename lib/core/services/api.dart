@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 import 'package:support_agent/core/models/actions.dart';
@@ -46,6 +47,7 @@ class Api {
       return json.decode(response.body);
       // return UserData.fromJson(json.decode(response.body));
     } else {
+      log(json.decode(response.body));
       return json.decode(response.body);
     }
   }
