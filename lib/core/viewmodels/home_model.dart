@@ -103,22 +103,13 @@ class HomeModel extends BaseModel {
 
     // Presence polling
     checkPresence();
+    // bool isSetAllowOfflineTicket = await _isSetAllowOfflineTicket();
+    pushNotificationStatus("ONLINE");
 
-    _firebaseMessaging.getToken().then((String token) async {
-      assert(token != null);
-      var authToken = _authService.currentUserData.accessToken;
-      var currentBot = _botService.defaultBot.userName;
+    // if (!isSetAllowOfflineTicket) {
+    //   showAlertDialog(context);
+    // }
 
-      var registerToken =
-          await _api.sendFirebaseToken(authToken, currentBot, token);
-      if (registerToken != null) {
-        bool isSetAllowOfflineTicket = await _isSetAllowOfflineTicket();
-
-        if (!isSetAllowOfflineTicket) {
-          showAlertDialog(context);
-        }
-      }
-    });
     setState(ViewState.Idle);
   }
 
@@ -269,8 +260,8 @@ class HomeModel extends BaseModel {
     SharedPreferences prefs = await _prefs;
     var allKeys = prefs.getKeys();
 
-    bool allowOfflineTicket =
-        allKeys.contains('allowOfflineTicket') ? true : false;
+    bool allowOfflineTicket = true;
+    // allKeys.contains('allowOfflineTicket') ? true : false;
 
     setState(ViewState.Busy);
     offlineTicketAllowed = allowOfflineTicket;

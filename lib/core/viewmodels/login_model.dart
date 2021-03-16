@@ -43,8 +43,6 @@ class LoginModel extends BaseModel {
   }
 
   Future<bool> login() async {
-    // change username and password
-
     if (config.config["username"] != null &&
         config.config["password"] != null) {
       var success = await _authenticationService.login(
@@ -53,6 +51,11 @@ class LoginModel extends BaseModel {
         return true;
       } else {
         errorMessage = success['error'];
+        debugPrint("Login unsuccessful: $errorMessage");
+        await platform.invokeMethod("send-notification", {
+          "payload": {"error": errorMessage}
+        });
+
         return false;
       }
     } else

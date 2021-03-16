@@ -16,7 +16,7 @@ class _LandingPageState extends State<LandingPage> {
     return BaseView<LandingModel>(
         onModelReady: (model) async => await model.gotoHome(context),
         builder: (context, model, child) => Container(
-              color: Colors.white,
+              color: Colors.blue,
             ));
   }
 }
