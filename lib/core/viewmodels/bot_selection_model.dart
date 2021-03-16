@@ -1,6 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:support_agent/core/enums/viewstate.dart';
 import 'package:support_agent/core/models/all_bots.dart';
@@ -23,8 +22,6 @@ class BotSelectionModel extends BaseModel {
   XmppCredsService _xmppCredsService = locator<XmppCredsService>();
   List<BotMappings> _allBots = List<BotMappings>();
   Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
-  static const platform =
-      const MethodChannel('com.yellowmessenger.support_agent/data');
 
   BotMappings _defaultBot;
   List<BotMappings> _filteredBotList = List<BotMappings>();
@@ -102,7 +99,7 @@ class BotSelectionModel extends BaseModel {
       XmppCredsModel creds = credsResponse.data;
       await _xmppCredsService.setDefault(creds);
     }
-    bool isInitializing = await platform.invokeMethod("isInitializeSDK");
+
     final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 
     _firebaseMessaging.getToken().then((String token) async {
@@ -113,12 +110,8 @@ class BotSelectionModel extends BaseModel {
     });
 
     setState(ViewState.Idle);
-    if (!isInitializing)
-      Navigator.pushNamedAndRemoveUntil(
-          context, 'home', (Route<dynamic> route) => false);
-    else {
-      debugPrint("SDK Initialized");
-      await platform.invokeMethod("close-module");
-    }
+
+    Navigator.pushNamedAndRemoveUntil(
+        context, 'home', (Route<dynamic> route) => false);
   }
 }

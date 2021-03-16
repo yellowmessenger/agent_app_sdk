@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:support_agent/core/enums/agentpresense.dart';
 
@@ -46,6 +47,8 @@ class HomeModel extends BaseModel {
     _xmppReady = status;
   }
 
+  static const platform =
+      const MethodChannel('com.yellowmessenger.support_agent/data');
   StreamSubscription _connectionChangeStream;
 
   bool isOffline = false;
@@ -84,6 +87,15 @@ class HomeModel extends BaseModel {
     if (!_xmppService.chatStreamController.isPaused)
       messageEvents =
           _xmppService.chatStreamController.stream.listen(_updateUI);
+
+    bool isInitializing = await platform.invokeMethod("isInitializeSDK");
+    if (!isInitializing)
+      Navigator.pushNamedAndRemoveUntil(
+          context, 'home', (Route<dynamic> route) => false);
+    else {
+      debugPrint("SDK Initialized");
+      await platform.invokeMethod("close-module");
+    }
 
     var agentResponse = await _api.getAgents(
         _authService.currentUserData.accessToken,
