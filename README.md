@@ -49,33 +49,23 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = findViewById(R.id.fab);
-        // Instantiate a FlutterEngine.
-        FlutterEngine flutterEngine = new FlutterEngine(this);
-
-        // Start executing Dart code to pre-warm the FlutterEngine.
-        flutterEngine.getDartExecutor().executeDartEntrypoint(
-                DartExecutor.DartEntrypoint.createDefault()
-        );
-
-        // Cache the FlutterEngine to be used by FlutterActivity.
-        FlutterEngineCache
-                .getInstance()
-                .put("my_engine_id", flutterEngine);
-
-        // Setting notification handler.
-        FlutterViewActivity.setNotificationCallback((HashMap<String, Object> payLoadData)->{
-            Log.d("New message", "This is a local notification from ticketId: "+payLoadData.get("ticketId").toString()); // printing sample payload value
-            // Notification Handler Implementation
-            return true;
-                });
+        
+        //Setting notification handler
+        AgentSDK.setNotificationCallback((HashMap<String, Object> payLoadData) -> {
+            Log.d("New message", "This is a local notification from ticketId: " + payLoadData.get("ticketId").toString());
+        });
+        
+        //Initialising the SDK (Should be called when the app starts to initiate the login flow in SDK)
+        AgentSDK.initialize();
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                FlutterViewActivity.setTicketId("<Ticket-ID>"); // to open chat page directly set ticket id 
-                Intent flutterIntent;
-                flutterIntent = new Intent(MainActivity.this, FlutterViewActivity.class);
-                startActivity(flutterIntent);
+            
+//               AgentSDK.setTicketId("102565"); // Setting ticket ID to open Chat page directly.
+                //Starting Agent SDK.
+                AgentSDK.start();
+
             }
         });
     }
@@ -87,37 +77,40 @@ public class MainActivity extends AppCompatActivity {
 ## Step 4
 Create a java class **FlutterViewActivity**
 ``` java
-package com.yellowmessenger.agentappsdk;
+package com.rara.delivery.dev;
 
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.function.Function;
+
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.FlutterEngineCache;
-
+import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.plugin.common.MethodChannel;
-
-
 
 public class FlutterViewActivity extends FlutterActivity {
     private static final String CHANNEL = "com.yellowmessenger.support_agent/data";
     public static String ticketId;
     public static Function notificationCallBack;
-
+    public static boolean initializing = false;
 
     @Override
     public FlutterEngine provideFlutterEngine(Context context) {
-        return FlutterEngineCache.getInstance().get("my_engine_id");
+        return FlutterEngineCache.getInstance().get("ym_partner_sdk");
     }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,59 +120,93 @@ public class FlutterViewActivity extends FlutterActivity {
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
 
-
         super.configureFlutterEngine(flutterEngine);
-
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CHANNEL).setMethodCallHandler(
                 (call, result) -> {
                     if (call.method.equals("getConfig")) {
-            JSONObject json = new JSONObject();
-            try {
-                json.put("username", "Username");
-                json.put("password", "Password");
-                json.put("botId", "BotId");
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            result.success(json.toString());
-        } else if (call.method.equals("close-module")) {
+                        JSONObject json = new JSONObject();
+                        try {
+                            json.put("username", "{{USERNAME}}");
+                            json.put("password", "{{PASSWORD}}");
+                            json.put("botId", "{{BOT-ID}");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        result.success(json.toString());
+                    } else if (call.method.equals("close-module")) {
+                        initializing = false;
                         this.finish();
-                    }
-          else if (call.method.equals("getCurrentTicket")) {
-                        result.success(FlutterViewActivity.ticketId);
-                    }
-          else if (call.method.equals("setCurrentTicket")) {
-                        FlutterViewActivity.ticketId = null;
-                        result.success(true);
-                    }
-         else if (call.method.equals("send-notification")) {
+                    } else if (call.method.equals("send-notification")) {
                         Log.d("Local Notification", "This is a local notification ");
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                             notificationCallBack.apply(call.argument("payload"));
                         }
 
+                    } else if (call.method.equals("getCurrentTicket")) {
+                        result.success(FlutterViewActivity.ticketId);
+                    } else if (call.method.equals("setCurrentTicket")) {
+                        FlutterViewActivity.ticketId = null;
+                        result.success(true);
+                    } else if (call.method.equals("isInitializeSDK")) {
+                        result.success(FlutterViewActivity.initializing);
+                    } else {
+                        result.notImplemented();
                     }
-        else {
-            result.notImplemented();
-        }
                 }
         );
-    }
-
-    public static boolean setTicketId (String ticketId){
-        FlutterViewActivity.ticketId = ticketId;
-        return true;
-    }
-
-    public static void setNotificationCallback (Function<HashMap<String, Object>, Boolean> callBack){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        FlutterViewActivity.notificationCallBack = callBack;
-        }
     }
 
 
 }
 
+class AgentSDK {
+
+    static Context context;
+    FlutterEngine flutterEngine;
+
+    private AgentSDK(Context ctx) {
+        // Instantiate a FlutterEngine.
+        flutterEngine = new FlutterEngine(ctx);
+        // Start executing Dart code to pre-warm the FlutterEngine.
+        flutterEngine.getDartExecutor().executeDartEntrypoint(
+                DartExecutor.DartEntrypoint.createDefault()
+        );
+        // Cache the FlutterEngine to be used by FlutterActivity.
+        FlutterEngineCache
+                .getInstance()
+                .put("ym_partner_sdk", flutterEngine);
+        context = ctx;
+    }
+
+
+    public static boolean setTicketId(String ticketId) {
+        FlutterViewActivity.ticketId = ticketId;
+        return true;
+    }
+
+    public static boolean initialize() {
+        FlutterViewActivity.initializing = true;
+
+        Intent flutterIntent;
+        flutterIntent = new Intent(context, FlutterViewActivity.class);
+        context.startActivity(flutterIntent);
+        return true;
+    }
+
+    public static boolean start() {
+        FlutterViewActivity.initializing = false;
+        Intent flutterIntent;
+        flutterIntent = new Intent(context, FlutterViewActivity.class);
+        context.startActivity(flutterIntent);
+        return true;
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static void setNotificationCallback(Function<HashMap<String, Object>, Boolean> callBack) {
+        FlutterViewActivity.notificationCallBack = callBack;
+    }
+}
 ```
 
 ## Step 5
