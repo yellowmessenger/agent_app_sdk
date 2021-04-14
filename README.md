@@ -50,13 +50,13 @@ public class MainActivity extends AppCompatActivity {
 
         FloatingActionButton fab = findViewById(R.id.fab);
         
-        //Setting notification handler
+        //Initialising the SDK (Should be called when the app starts to initiate the login flow in SDK)
+        YMAgent.initialize(this);
+        
+         //Setting notification handler
         YMAgent.setNotificationCallback((HashMap<String, Object> payLoadData) -> {
             Log.d("New message", "This is a local notification from ticketId: " + payLoadData.get("ticketId").toString());
         });
-        
-        //Initialising the SDK (Should be called when the app starts to initiate the login flow in SDK)
-        YMAgent.initialize(this);
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
