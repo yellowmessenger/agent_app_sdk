@@ -2,7 +2,7 @@
 
 ## Step 1
 Download and unzip the local maven repo from the following link.
-https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.15.zip
+https://github.com/yellowmessenger/agent_app_sdk/blob/master/repo_v1.0.16.zip
 
 ## Step 2 
 Consuming the Module  
@@ -51,20 +51,20 @@ public class MainActivity extends AppCompatActivity {
         FloatingActionButton fab = findViewById(R.id.fab);
         
         //Setting notification handler
-        AgentSDK.setNotificationCallback((HashMap<String, Object> payLoadData) -> {
+        YMAgent.setNotificationCallback((HashMap<String, Object> payLoadData) -> {
             Log.d("New message", "This is a local notification from ticketId: " + payLoadData.get("ticketId").toString());
         });
         
         //Initialising the SDK (Should be called when the app starts to initiate the login flow in SDK)
-        AgentSDK.initialize();
+        YMAgent.initialize(this);
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
             
-//               AgentSDK.setTicketId("102565"); // Setting ticket ID to open Chat page directly.
+//               YMAgent.setTicketId("102565"); // Setting ticket ID to open Chat page directly.
                 //Starting Agent SDK.
-                AgentSDK.start();
+                YMAgent.showChatView();
 
             }
         });
@@ -159,12 +159,12 @@ public class FlutterViewActivity extends FlutterActivity {
 
 }
 
-class AgentSDK {
-
+class YMAgent {
+    
     static Context context;
     FlutterEngine flutterEngine;
 
-    private AgentSDK(Context ctx) {
+    private YMAgent(Context ctx) {
         // Instantiate a FlutterEngine.
         flutterEngine = new FlutterEngine(ctx);
         // Start executing Dart code to pre-warm the FlutterEngine.
@@ -184,7 +184,8 @@ class AgentSDK {
         return true;
     }
 
-    public static boolean initialize() {
+    public static boolean initialize(Context ctx) {
+        new YMAgent(ctx);
         FlutterViewActivity.initializing = true;
 
         Intent flutterIntent;
@@ -193,7 +194,7 @@ class AgentSDK {
         return true;
     }
 
-    public static boolean start() {
+    public static boolean showChatView() {
         FlutterViewActivity.initializing = false;
         Intent flutterIntent;
         flutterIntent = new Intent(context, FlutterViewActivity.class);
